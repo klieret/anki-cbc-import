@@ -11,7 +11,7 @@ from anki.hooks import addHook, runHook, wrap
 
 import csv
 import os.path
-
+import glob
 
 class cbcImport():
 	def __init__(self):
@@ -19,7 +19,8 @@ class cbcImport():
 		# ----------- BEGIN CONFIG -----------
 		
 		# file to import (change the "..." part)
-		self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
+		#self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
+		self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[0] # first file of all files that are on Desktop and have extension .csv
 		# delimiter of the input file (character that separates
 		# different rows). E.g. '\t' for Tabulator, ';' for ; etc. 
 		self.delim='\t'
