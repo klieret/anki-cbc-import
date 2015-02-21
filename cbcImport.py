@@ -155,15 +155,21 @@ class cbcImport():
 	def cardAdded(self, obj, note):
 		""" This function gets called, once a card is added and
 		is needed to update self.added (list of added cards) """
+		if len(self.data)==0:
+			return
 		current=self.data[self.currentIdx]
 		if note['Expression'] in current[0]:
-			print("Added")
-			tooltip(_("Added"),period=1000)
+			self.lastAdded=True
 			self.added.append(current)
 		else:
-			print("Not added")
-			tooltip(_("Not added"), period=1000)	
+			self.lastAdded=False
 		self.updateStatus()
+		
+	def myTooltip(self,*args):
+		if self.lastAdded:
+			tooltip(_("Added to added"), period=00)
+		else:
+			tooltip(_("NOT ADDED TO ADDED!"), period=1000)
 
 	# Setup Menu
 	# ----------------------------------------
@@ -234,8 +240,10 @@ myImport=cbcImport()
 # generate new hooks
 AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
 AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
+AddCards.addCards=wrap(AddCards.addCards,lambda AddCardsObj: runHook("tooltip",AddCardsObj))
 
 # add functions to those hooks
 addHook("addEditorSetup",myImport.setupMyMenu)
 addHook("unloadProfile",myImport.save)
+addHook("tooltip",myImport.myTooltip)
 addHook("addHistory",myImport.cardAdded)
