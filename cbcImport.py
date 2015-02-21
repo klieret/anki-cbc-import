@@ -49,6 +49,7 @@ class cbcImport():
 		""" Inserts previous Entry. """
 		if self.currentIdx>=1:
 			self.currentIdx-=1
+		self.insert()
 	def first(self):
 		self.currentIdx=0
 		self.insert()
@@ -75,8 +76,10 @@ class cbcImport():
 		soon as 'editFocusLost' is called (normally called after manually 
 		editing a field). Calling it directly saves us the trouble of clicking
 		into the 'Expression' field and outside again to trigger this. """
-		f=mw.col.models.fieldNames(self.e.note.model()).index('Expression')
-		runHook('editFocusLost',False,self.e.note,f)
+		changedFields=['Expression','Meaning']
+		for field in changedFields:
+			fieldIdx=mw.col.models.fieldNames(self.e.note.model()).index('Expression')
+			runHook('editFocusLost',False,self.e.note,fieldIdx)
 		self.e.loadNote()
 	
 	def mySetupButtons(self,editor):
