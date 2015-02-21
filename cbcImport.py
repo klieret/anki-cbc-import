@@ -18,6 +18,8 @@ class cbcImport():
 		self.data=[] # format: [(field1,field2,...)]
 		# how many of the vocabulary have we already added:
 		self.currentIdx=0
+		# saves the instance of the Editor window
+		self.e=None
 	def load(self):
 		""" Loads self.importFile to self.data. """
 		self.data=[]
@@ -25,24 +27,24 @@ class cbcImport():
 			reader=csv.reader(csvfile, delimiter="\t")
 			for row in reader:
 				self.data.append(row)
-	def clean(self,a):
+	def clean(self):
 		""" Resets all fields. """
-		for field in mw.col.models.fieldNames(a.note.model()):
-			a.note[field]=''
+		for field in mw.col.models.fieldNames(self.e.note.model()):
+			self.e.note[field]=''
 		a.note.flush()
-	def next(self,a):
+	def next(self):
 		""" Inserts next Entry. """
 		if self.currentIdx<len(self.data)-1:
 			self.currentIdx+=1
-		self.insert(a)
-	def previous(self,a):
+		self.insert()
+	def previous(self):
 		""" Inserts previous Entry. """
 		if self.currentIdx>=1:
 			self.currentIdx-=1
-		self.insert(a)
-	def insert(self,a):
+		self.insert()
+	def insert(self):
 		""" Inserts current Entry. """
-		self.clean(a)
+		self.clean()
 		if not self.currentIdx < len(self.data):
 			# should only happen if data could not
 			# be imported.
@@ -50,30 +52,36 @@ class cbcImport():
 		current=self.data[self.currentIdx]
 		# ADAPT this!
 		# ---------------
-		a.note['Expression']=unicode(current[0].split('・')[-1],'utf-8')
-		a.note['Meaning']=unicode(current[2],'utf-8')
+		self.e.note['Expression']=unicode(current[0].split('・')[-1],'utf-8')
+		self.e.note['Meaning']=unicode(current[2],'utf-8')
 		# ---------------
-		a.note.flush()
-		a.loadNote()
-		self.runHooks(a)
-	def runHooks(self,a)
-		""" Calls 'editFocusLost'. """
-		# A lot of other plugins (e.g. furigana completion etc.) run as 
-		# soon as 'editFocusLost' is called (normally called after manually 
-		# editing a field). Calling it directly saves us the trouble of clicking
-		# into the 'Expression' field and outside again to trigger this.
-		f=mw.col.models.fieldNames(a.note.model()).index('Expression')
+		self.e.note.flush()
+		self.e.loadNote()
+		self.runHooks()
+	def runHooks(self):
+		""" Calls 'editFocusLost'. 
+		 Expl.: A lot of other plugins (e.g. furigana completion etc.) run as 
+		soon as 'editFocusLost' is called (normally called after manually 
+		editing a field). Calling it directly saves us the trouble of clicking
+		into the 'Expression' field and outside again to trigger this. """
+		f=mw.col.models.fieldNames(self.e.note.model()).index('Expression')
 		runHook('editFocusLost',False,a.note,f)
-		a.loadNote()
+		self.e.loadNote()
 	
-	def mySetupButtons(self,a):
+	def mySetupButtons(self,editor):
 		""" Setup Buttons. """
-		a._addButton("mybutton", lambda: self.load(), text="Load", size=False)
-		a._addButton("mybutton", lambda: self.insert(a), text="Fill", size=False, key="Ctrl+F")
-		a._addButton("mybutton", lambda: self.next(a), text="+", size=False, key="Ctrl+G")
-		a._addButton("mybutton", lambda: self.previous(a), text="-", size=False, key="Ctrl+H")
+		self.e=editor
+		self.e._addButton("cbcLoad", self.load, text="Load", tip="Load file", size=False, canDisable=False, )
+		self.e._addButton("cbcFill", self.insert, text="X", tip="Fill in form", size=False, canDisable=False, key="Ctrl+F")
+		self.e._addButton("cbcNext", self.next, text=">", tip="Fill in next entry", size=False, canDisable=False, key="Ctrl+G")
+		self.e._addButton("cbcPrevious", self.previous, text="<", tip="Fill in previous entry", size=False, canDisable=False, key="Ctrl+H")
 	
+	def updateButtons(self,a):
+		""" Updates button texts e.g. to display 
+		number of remaining entries etc. """
+		pass
+		
 
-a=cbcImport()
-Editor.setupButtons = wrap(Editor.setupButtons, a.mySetupButtons)
+myImport=cbcImport()
+Editor.setupButtons = wrap(Editor.setupButtons, myImport.mySetupButtons)
 
