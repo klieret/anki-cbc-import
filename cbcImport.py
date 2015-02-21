@@ -95,14 +95,20 @@ class cbcImport():
 		self.e.outerLayout.addLayout(self.newIconsBox)
 		# --
 		self.myAddButton("cbcLoad", self.load, text="Load", tip="Load file", size=False, )
+		self.myAddButton("cbcReverse", self.reverse, text="Reverse", tip="Reverse Order", size=False, )
 		self.myAddButton("cbcFirst", self.first, text="<<", tip="Fill in first entry", size=False,)
-		self.myAddButton("cbcPrevious", self.previous, text="<", tip="Fill in previous entry", size=False , key="Ctrl+H")
-		self.myAddButton("cbcFill", self.insert, text="X", tip="Fill in form", size=False,  key="Ctrl+F")
-		self.myAddButton("cbcNext", self.next, text=">", tip="Fill in next entry", size=False, key="Ctrl+G")
+		self.myAddButton("cbcPrevious", self.previous, text="<", tip="Fill in previous entry (Ctrl+H)", size=False , key="Ctrl+H")
+		self.myAddButton("cbcFill", self.insert, text="X", tip="Fill in form (Ctrl+F)", size=False,  key="Ctrl+F")
+		self.myAddButton("cbcNext", self.next, text=">", tip="Fill in next entry (Ctrl+G)", size=False, key="Ctrl+G")
 		self.myAddButton("cbcLast", self.last, text=">>", tip="Fill in last entry", size=False , )
 		self.status=QLabel()
 		self.newIconsBox.addWidget(self.status)
-		
+	
+	def reverse(self):
+		self.data.reverse()
+		self.currentIdx=len(self.data)-1-self.currentIdx
+		self.updateStatus()
+	
 	def myAddButton(self, name, func, key=None, tip=None, size=True, text="", check=False):
 		# adapted from from /usr/share/anki/aqt/editor.py Lines 308..
 		b = QPushButton(text)
