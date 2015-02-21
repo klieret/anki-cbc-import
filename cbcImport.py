@@ -6,6 +6,7 @@ from anki.hooks import addHook, runHook
 from aqt import addcards
 from anki.hooks import wrap
 from aqt.editor import Editor
+from aqt.addcards import AddCards
 import csv
 import os.path
 from aqt.utils import shortcut
@@ -81,6 +82,16 @@ class cbcImport():
 			fieldIdx=mw.col.models.fieldNames(self.e.note.model()).index('Expression')
 			runHook('editFocusLost',False,self.e.note,fieldIdx)
 		self.e.loadNote()
+	def history(self,obj, note):
+		print(note)
+		print(note['Expression'])
+	
+	def cardAdded(self,AddCardsObj):
+		note=AddCardsObj.editor.note
+		print(note)
+		print(note['Expression'])
+	def wrapper(self,AddCardsObj):
+		self.mySetupButtons(AddCardsObj.editor)
 	
 	def mySetupButtons(self,editor):
 		self.e=editor
@@ -137,8 +148,16 @@ class cbcImport():
 		number of remaining entries etc. """
 		if not len(self.data)==0:
 			self.status.setText("%d/%d" % (self.currentIdx+1,len(self.data)))	
-		
+
+def addNoteHook(*args):
+	runHook("cardAdded",*args)
+
+def hello(*args):
+	print("hello",args)
 
 myImport=cbcImport()
-Editor.setupButtons = wrap(Editor.setupButtons, myImport.mySetupButtons)
+AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
+AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
 
+addHook("addHistory",myImport.history)
+addHook("addEditorSetup",myImport.wrapper)
