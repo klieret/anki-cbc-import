@@ -4,7 +4,7 @@
 from aqt import mw # main window
 from aqt.editor import Editor
 from aqt.addcards import AddCards # addCards dialog
-from aqt.utils import shortcut, tooltip
+from aqt.utils import shortcut, tooltip, getSaveFile
 from aqt.qt import *
 
 from anki.hooks import addHook, runHook, wrap
@@ -48,9 +48,15 @@ class cbcImport():
 		self.currentIdx=0
 		# saves the instance of the Editor window
 		self.e=None
+		# was last Card added to self.added?
+		self.lastAdded=None
 		self._buttons={}
 
-	
+	def newInputFile(self):
+		importFile=QFileDialog.getSaveFileName(options=QFileDialog.DontConfirmOverwrite)
+		if importFile:
+			self.importFile=importFile
+		self.updateStatus()
 
 	def insert(self):
 		""" Inserts an entry from self.data
@@ -187,17 +193,27 @@ class cbcImport():
 			self.newIconsBox.setSpacing(14)
 		self.e.outerLayout.addLayout(self.newIconsBox)
 		# Buttons
+		self.addMyButton("cbcNewInputFile", self.newInputFile, text="Choose File", tip="Choose new input file.", size="30x120", )
 		self.addMyButton("cbcLoad", self.load, text="Load", tip="Load file", size="30x60", )
 		self.addMyButton("cbcReverse", self.reverse, text="Reverse", tip="Reverse Order", size="30x60", )
+		self.addMyButton("cbcSave", self.save, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
 		self.addMyButton("cbcFirst", self.first, text="<<", tip="Fill in first entry", size="30x50",)
 		self.addMyButton("cbcPrevious", self.previous, text="<", tip="Fill in previous entry (Ctrl+H)", size="30x50" , key="Ctrl+H")
 		self.addMyButton("cbcFill", self.insert, text="X", tip="Fill in form (Ctrl+F)", size="30x50",  key="Ctrl+F")
 		self.addMyButton("cbcNext", self.next, text=">", tip="Fill in next entry (Ctrl+G)", size="30x50", key="Ctrl+G")
 		self.addMyButton("cbcLast", self.last, text=">>", tip="Fill in last entry", size="30x50" , )
 		# Status Field
+		self.statusIconsBox=QHBoxLayout()
+		if not isMac:
+			self.statusIconsBox.setMargin(6)
+			self.statusIconsBox.setSpacing(0)
+		else:
+			self.statusIconsBox.setMargin(0)
+			self.statusIconsBox.setSpacing(14)
+		self.e.outerLayout.addLayout(self.statusIconsBox)
 		self.status=QLabel()
 		self.updateStatus()
-		self.newIconsBox.addWidget(self.status)
+		self.statusIconsBox.addWidget(self.status)
 	
 	def addMyButton(self, name, func, key=None, tip=None, size=True, text="", check=False):
 		""" Shortcut to add a new button. """		
@@ -230,9 +246,17 @@ class cbcImport():
 	def updateStatus(self):
 		""" Updates button texts e.g. to display 
 		number of remaining entries etc. """
-		numbers=[self.currentIdx+1,len(self.data),len(self.added),len(self.data)-len(self.added)]
-		#form=["{:3}".format(n) for n in numbers]
-		self.status.setText(" Idx: %s/%s Add: %s Rem: %s" % tuple(numbers))	
+		def short(string):
+			mlen=10
+			if len(string)<=mlen:
+				return string
+			return "..."+string[-mlen:]
+		text='<b>In:</b> "%s" ' % short(self.importFile)
+		text+='<b>OutA:</b> "%s" ' % short(self.addedFile)
+		text+='<b>OutR:</b> "%s" | ' % short(self.restFile)
+		text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Rem:</b> %d | " % (self.currentIdx+1,len(self.data),len(self.added),len(self.data)-len(self.added))
+		text+="<b>LA:</b> %s" % str(self.lastAdded)
+		self.status.setText(text)	
 
 
 myImport=cbcImport()
