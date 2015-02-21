@@ -4,7 +4,7 @@
 from aqt import mw # main window
 from aqt.editor import Editor
 from aqt.addcards import AddCards # addCards dialog
-from aqt.utils import shortcut
+from aqt.utils import shortcut, tooltip
 from aqt.qt import *
 
 from anki.hooks import addHook, runHook, wrap
@@ -16,7 +16,7 @@ import os.path
 class cbcImport():
 	def __init__(self):
 		""" init and basic configuration """
-		# ----------- CONFIG -----------
+		# ----------- BEGIN CONFIG -----------
 		
 		# file to import (change the "..." part)
 		self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
@@ -41,7 +41,7 @@ class cbcImport():
 		# data from import File will be saved in self.data:
 		self.data=[] # format: [[field1,field2,...]]
 		# subsets of self.data to save all added cards resp.
-		# all remaining cards.
+		# all remaining cards:
 		self.added=[]
 		self.rest=[]
 		# how many of the vocabulary have we already added:
@@ -49,6 +49,8 @@ class cbcImport():
 		# saves the instance of the Editor window
 		self.e=None
 		self._buttons={}
+
+	
 
 	def insert(self):
 		""" Inserts an entry from self.data
@@ -60,7 +62,7 @@ class cbcImport():
 			return
 		current=self.data[self.currentIdx]
 		note=self.e.note
-		# ----------- CONFIG -----------
+		# ----------- BEGIN CONFIG -----------
 		delim=unicode('・',self.encoding)
 		note['Expression']=current[0].split(delim)[-1]
 		note['Meaning']=current[2]
@@ -73,13 +75,13 @@ class cbcImport():
 
 	def load(self):
 		""" Loads input file to self.data. """
-		print("LLLoad")
 		self.data=[]
 		with open(self.importFile,'r') as csvfile:
 			reader=csv.reader(csvfile, delimiter=self.delim)
 			for row in reader:
 				self.data.append([c.decode(self.encoding) for c in row])
 		self.updateStatus()
+		tooltip(_("Loaded %d notes" % len(self.data)), period=500)
 	
 	# Saving....
 	def updateRest(self):
@@ -109,7 +111,8 @@ class cbcImport():
 			self.e.note[field]=''
 		self.e.note.flush()
 	
-	# Controlling self.Idx: .......
+	# Controlling self.Idx
+	# -----------------------------
 	def last(self):
 		""" Inserts last entry. """
 		self.currentIdx=len(self.data)-1
@@ -134,7 +137,8 @@ class cbcImport():
 		self.currentIdx=len(self.data)-1-self.currentIdx
 		self.updateStatus()
 		
-
+	# Running Hooks and similar
+	# -------------------------------------
 	
 	def runHooks(self):
 		""" Runs the hook 'editFocusLost'. 
@@ -144,7 +148,7 @@ class cbcImport():
 		into the 'Expression' field and outside again to trigger this. """
 		changedFields=['Expression','Meaning']
 		for field in changedFields:
-			fieldIdx=mw.col.models.fieldNames(self.e.note.model()).index('Expression')
+			fieldIdx=mw.col.models.fieldNames(self.e.note.model()).index(field)
 			runHook('editFocusLost',False,self.e.note,fieldIdx)
 		self.e.loadNote()
 	
@@ -153,16 +157,19 @@ class cbcImport():
 		is needed to update self.added (list of added cards) """
 		current=self.data[self.currentIdx]
 		if note['Expression'] in current[0]:
+			print("Added")
+			tooltip(_("Added"),period=1000)
 			self.added.append(current)
+		else:
+			print("Not added")
+			tooltip(_("Not added"), period=1000)	
 		self.updateStatus()
-	
-#	def wrapper(self,AddCardsObj):
-#		self.setupMyButtons(AddCardsObj.editor)
-		
-	def fix(self,AddCardsObj):	
-		AddCardsObj.addButton.setShortcut(QKeySequence("Ctrl+Return"))
-	
-	def setupMyButtons(self,AddCardsObj):
+
+	# Setup Menu
+	# ----------------------------------------
+
+	def setupMyMenu(self,AddCardsObj):
+		""" Creates the line of buttons etc. to control this addon. """
 		self.e=AddCardsObj.editor
 		# adapted from from /usr/share/anki/aqt/editor.py Lines 350
 		self.newIconsBox=QHBoxLayout()
@@ -187,10 +194,11 @@ class cbcImport():
 		self.newIconsBox.addWidget(self.status)
 	
 	def addMyButton(self, name, func, key=None, tip=None, size=True, text="", check=False):
+		""" Shortcut to add a new button. """		
 		# adapted from from /usr/share/anki/aqt/editor.py Lines 308..
 		b = QPushButton(text)
-		# For some reason, if you don't deactivate those
-		# two, the first button will start to behave like the Add-Button.
+		# For some reason, if you don't deactivate manually the following
+		# two options, the first button will start to behave like the Add-Button.
 		b.setAutoDefault(False)
 		b.setDefault(False)
 		if check:
@@ -220,15 +228,14 @@ class cbcImport():
 		#form=["{:3}".format(n) for n in numbers]
 		self.status.setText(" Idx: %s/%s Add: %s Rem: %s" % tuple(numbers))	
 
-def addNoteHook(*args):
-	runHook("cardAdded",*args)
-
 
 myImport=cbcImport()
+
+# generate new hooks
 AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
 AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
-#AddCards.setupButtons=wrap(AddCards.setupButtons,myImport.fix)
 
-#addHook("addHistory",myImport.cardAdded)
-addHook("addEditorSetup",myImport.setupMyButtons)
+# add functions to those hooks
+addHook("addEditorSetup",myImport.setupMyMenu)
 addHook("unloadProfile",myImport.save)
+addHook("addHistory",myImport.cardAdded)
