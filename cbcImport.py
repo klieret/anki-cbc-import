@@ -176,6 +176,11 @@ class cbcImport():
 				for row in self.rest:
 					row=[c.encode(self.encoding) for c in row]
 					writer.writerow(row)
+
+	def saveButtonPushed(self):
+		""" What happens if save button is pushed:
+		Show tooltip and save."""
+		save()
 		# tooltip
 		text=""
 		if self.addedFile: 
@@ -185,6 +190,7 @@ class cbcImport():
 		if text=="":
 			text+="NO FILE TO SAVE"
 		tooltip(_(text), period=1500)
+	
 	
 	# Controlling self.Idx
 	# -----------------------------
@@ -277,7 +283,7 @@ class cbcImport():
 		self.addMyButton("cbc_NewInputFile", self.newInputFile, text="Choose File", tip="Choose new input file.", size="30x120", )
 		self.addMyButton("cbc_Load", self.load, text="Load", tip="Load file", size="30x60", )
 		self.addMyButton("cbcQ_Reverse", self.reverse, text="Reverse", tip="Reverse Order", size="30x60", )
-		self.addMyButton("cbcS_ave", self.save, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
+		self.addMyButton("cbcS_ave", self.saveButtonPushed, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
 		self.addMyButton("cbcQ_First", self.first, text="<<", tip="Fill in first entry", size="30x50",)
 		self.addMyButton("cbcQ_Previous", self.previous, text="<", tip="Fill in previous entry", size="30x50" , )
 		self.addMyButton("cbcQ_Fill", self.insert, text="X", tip="Fill in form (Ctrl+F)", size="30x50",  key="Ctrl+F")
