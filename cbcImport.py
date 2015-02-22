@@ -12,6 +12,7 @@ from anki.hooks import addHook, runHook, wrap
 import csv
 import os.path
 import glob
+import copy
 
 # 1. RESTART ANKI AFTER EACH EDIT (ELSE IT WON'T TAKE EFFECT)
 # 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
@@ -68,19 +69,8 @@ class cbcImport():
 		self.lastAdded=None
 		self._buttons={}
 
-
-	def insert(self):
-		""" Inserts an entry from self.queue
-		into the Anki Dialog """
-		if not self.currentIdx < len(self.queue):
-			# empty queue
-			tooltip(_("Queue is empty!"),period=1000)
-			return
-		
-		self.clean()	# remove All field entries
-		
-		current=self.queue[self.currentIdx]
-		note=self.e.note
+	def wrap(self, note, current):
+		""" Updates note $note with data from $current. """
 		
 		# ----------- BEGIN CONFIG -----------
 		delim=unicode('・',self.encoding)
@@ -100,9 +90,23 @@ class cbcImport():
 		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
 		
-		self.e.note=note
-		self.e.note.flush()
-		self.e.loadNote()
+		return note
+
+	def insert(self):
+		""" Inserts an entry from self.queue
+		into the Anki Dialog """
+		if not self.currentIdx < len(self.queue):
+			# empty queue
+			tooltip(_("Queue is empty!"),period=1000)
+			return
+		
+		self.clean()	# remove All field entries
+		
+		current=self.queue[self.currentIdx]	#source
+		note=copy.copy(self.e.note) 		#target
+		
+		self.e.setNote(self.wrap(note,current))
+		
 		self.runHooks()
 		self.updateStatus()
 	
