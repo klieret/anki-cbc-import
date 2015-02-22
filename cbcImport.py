@@ -46,46 +46,42 @@ class cbcImport():
 		#self.addedFile=importFileName+"_added"+importFileExt
 		#self.restFile=importFileName+"_rest"+importFileExt
 		
-		# If a word is added, remove the word from
-		# the self.data list?
-		self.removeAddedFromList=True
-		# remove duplicates from List?
-		self.removeDupesFromList=True
-		
+		self.careForDupes=True # Should dupes be treated differently?
 		
 		# ----------- END CONFIG -----------
 		
-		# data from import File will be saved in self.data:
-		self.data=[] # format: [[field1,field2,...]]
-		# subsets of self.data to save all added cards resp.
-		# all remaining cards resp. all duplicates:
-		self.added=[]
-		self.rest=[]
-		self.dupe=[]
-		# how many of the vocabulary have we already added:
-		self.currentIdx=0
-		# saves the instance of the Editor window
-		self.e=None
+		# data from import File will be saved in self.data
+		# format: [[field1,field2,...],[field1,field2,...]]
+		self.data=[] 
+		# subsets of self.data 
+		self.added=[] 	# added cards
+		self.rest=[] 	# remaining cards
+		self.dupe=[] 	# duplicates with anki Cards
+		self.queue=[] 	# currentQueue
+		
+		self.currentIdx=0 	# cursor in self.queue
+		
+		self.e=None		# instance of the Editor window
+		self.mw=None	# instance of main window
+		
 		# was last Card added to self.added?
 		self.lastAdded=None
 		self._buttons={}
 
-	def newInputFile(self):
-		importFile=QFileDialog.getSaveFileName(options=QFileDialog.DontConfirmOverwrite)
-		if importFile:
-			self.importFile=importFile
-		self.updateStatus()
 
 	def insert(self):
-		""" Inserts an entry from self.data
+		""" Inserts an entry from self.queue
 		into the Anki Dialog """
-		self.clean()
-		if not self.currentIdx < len(self.data):
-			# should only happen if data could not
-			# be imported.
+		if not self.currentIdx < len(self.queue):
+			# empty queue
+			tooltip(_("Queue is empty!"),period=1000)
 			return
-		current=self.data[self.currentIdx]
+		
+		self.clean()	# remove All field entries
+		
+		current=self.queue[self.currentIdx]
 		note=self.e.note
+		
 		# ----------- BEGIN CONFIG -----------
 		delim=unicode('・',self.encoding)
 		note['Expression']=current[0].split(delim)[-1]
@@ -103,28 +99,48 @@ class cbcImport():
 		
 		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
+		
 		self.e.note=note
 		self.e.note.flush()
 		self.e.loadNote()
 		self.runHooks()
 		self.updateStatus()
+	
+	def clean(self):
+		""" Resets all fields. """
+		for field in mw.col.models.fieldNames(self.e.note.model()):
+			self.e.note[field]=''
+		self.e.note.flush()
 
+	# Loading/Saving file
+	# ------------------------
+
+	def newInputFile(self):
+		importFile=QFileDialog.getSaveFileName(options=QFileDialog.DontConfirmOverwrite)
+		if importFile:
+			self.importFile=importFile
+		self.updateStatus()
+	
 	def load(self):
 		""" Loads input file to self.data. """
+		# initialize self.data
 		self.data=[]
 		with open(self.importFile,'r') as csvfile:
 			reader=csv.reader(csvfile, delimiter=self.delim)
 			for row in reader:
 				self.data.append([c.decode(self.encoding) for c in row])
-		self.findDupes()
-		if self.removeDupesFromList:
-			self.removeDupes()
+		# initialize subsets
+		self.fullUpdateDupes()
+		self.fullUpdateRest()
+		self.queue=self.rest
+		# status
 		self.updateStatus()
-		
-		tooltip(_("Queue: %d (Dupe: %d)" % (len(self.data),len(self.dupe))), period=1500)
-	
-	def findDupes(self):
-		""" Finds all duplicates from self.data and writes them to self.dupe """
+		tooltip(_("All: %d (Dupe: %d)" % (len(self.data),len(self.dupe))), period=1500)
+	def fullUpdateDupes(self):
+		""" If self.careForDupes==True: Finds all duplicates from self.data and
+		writes them to self.dupe. Else: do nothing. """
+		if not self.careForDupes:
+			return
 		from ignore_dupes import expressionDupe
 		for item in self.data:
 			delim=unicode('・',self.encoding)
@@ -132,18 +148,25 @@ class cbcImport():
 			print("Checking %s" % exp)
 			if expressionDupe(self.mw.col,exp):
 				self.dupe.append(item)
+	def fullUpdateRest(self):
+		""" Generates self.rest from self.data by substract self.dupe and self.added. """
+		self.rest=[]
+		for item in self.data:
+			if not item in self.dupe and not item in self.added:
+				self.rest.append(item)
+		
 	
-	def removeDupes(self):
-		""" Removes all duplicates from self.data """
-		for item in self.dupe:
-			self.data.remove(item)
+	#def removeDupes(self):
+	#	""" Removes all duplicates from self.data """
+	#	for item in self.dupe:
+	#		self.rest.remove(item)
 	# Saving....
-	def updateRest(self):
-		""" Builds self.rest from self.data and self.added """
-		for i in range(len(self.data)):
-			if not self.data[i] in self.added:
-				self.rest.append(self.data[i])
-
+#	def updateRest(self):
+#		""" Builds self.rest from self.data and self.added """
+#		for i in range(len(self.data)):
+#			if not self.data[i] in self.added:
+#				self.rest.append(self.data[i])
+		
 	def save(self):
 		""" Saves self.added and self.rest to the resp. files """
 		if self.addedFile:
@@ -169,21 +192,17 @@ class cbcImport():
 			text+="NO FILE TO SAVE"
 		tooltip(_(text), period=1500)
 	
-	def clean(self):
-		""" Resets all fields. """
-		for field in mw.col.models.fieldNames(self.e.note.model()):
-			self.e.note[field]=''
-		self.e.note.flush()
+	
 	
 	# Controlling self.Idx
 	# -----------------------------
 	def last(self):
 		""" Inserts last entry. """
-		self.currentIdx=len(self.data)-1
+		self.currentIdx=len(self.queue)-1
 		self.insert()
 	def next(self):
 		""" Inserts next entry. """
-		if self.currentIdx<len(self.data)-1:
+		if self.currentIdx<len(self.queue)-1:
 			self.currentIdx+=1
 		else:
 			tooltip(_("Already last card"), period=500)
@@ -202,7 +221,7 @@ class cbcImport():
 	def reverse(self):
 		""" Reverses the ordering. """
 		self.data.reverse()
-		self.currentIdx=len(self.data)-1-self.currentIdx
+		self.currentIdx=len(self.queue)-1-self.currentIdx
 		self.updateStatus()
 		
 	# Running Hooks and similar
@@ -225,12 +244,11 @@ class cbcImport():
 		is needed to update self.added (list of added cards) """
 		if len(self.data)==0:
 			return
-		current=self.data[self.currentIdx]
+		current=self.queue[self.currentIdx]
 		if note['Expression'] in current[0]:
 			self.lastAdded=True
 			self.added.append(current)
-			if self.removeAddedFromList:
-				self.data.remove(current)
+			self.rest.remove(current)
 		else:
 			self.lastAdded=False
 		self.updateStatus()
@@ -321,7 +339,7 @@ class cbcImport():
 		text='<b>In:</b> "%s" ' % short(self.importFile)
 		text+='<b>OutA:</b> "%s" ' % short(self.addedFile)
 		text+='<b>OutR:</b> "%s" | ' % short(self.restFile)
-		text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Rem:</b> %d | " % (self.currentIdx+1,len(self.data),len(self.added),len(self.data)-len(self.added))
+		text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.currentIdx+1,len(self.queue),len(self.added),len(self.dupe))
 		text+="<b>LA:</b> %s" % str(self.lastAdded)
 		self.status.setText(text)	
 
