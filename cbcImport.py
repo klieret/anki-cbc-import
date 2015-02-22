@@ -20,7 +20,8 @@ class cbcImport():
 		
 		# file to import (change the "..." part)
 		#self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
-		self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[0] # first file of all files that are on Desktop and have extension .csv
+		self.importFile=os.path.expanduser('~/Desktop/rest.csv')
+		#self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] # last file of all files that are on Desktop and have extension .csv
 		# delimiter of the input file (character that separates
 		# different rows). E.g. '\t' for Tabulator, ';' for ; etc. 
 		self.delim='\t'
@@ -34,17 +35,27 @@ class cbcImport():
 		# Note that the file contents will be overwritten!
 		# If self.addedFile=None or False or "" is specified
 		# no output will be created for addedFile (restFile analogous)
-		self.addedFile=importFileName+"_added"+importFileExt
-		self.restFile=importFileName+"_rest"+importFileExt
+		self.addedFile=os.path.expanduser('~/Desktop/added.csv')
+		self.restFile=os.path.expanduser('~/Desktop/rest.csv')
+		#self.addedFile=importFileName+"_added"+importFileExt
+		#self.restFile=importFileName+"_rest"+importFileExt
+		
+		# If a word is added, remove the word from
+		# the self.data list?
+		self.removeAddedFromList=True
+		# remove duplicates from List?
+		self.removeDupesFromList=True
+		
 		
 		# ----------- END CONFIG -----------
 		
 		# data from import File will be saved in self.data:
 		self.data=[] # format: [[field1,field2,...]]
 		# subsets of self.data to save all added cards resp.
-		# all remaining cards:
+		# all remaining cards resp. all duplicates:
 		self.added=[]
 		self.rest=[]
+		self.dupe=[]
 		# how many of the vocabulary have we already added:
 		self.currentIdx=0
 		# saves the instance of the Editor window
@@ -72,7 +83,19 @@ class cbcImport():
 		# ----------- BEGIN CONFIG -----------
 		delim=unicode('・',self.encoding)
 		note['Expression']=current[0].split(delim)[-1]
-		note['Meaning']=current[2]
+		
+		def enum(string):
+			split=string.split('/')
+			out=""
+			n=len(split)
+			if n==1:
+				return string
+			else:
+				for i in range(n):
+					out+=str(i+1)+". "+split[i]+'<br>'
+			return out.strip()
+		
+		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
 		self.e.note=note
 		self.e.note.flush()
@@ -87,9 +110,27 @@ class cbcImport():
 			reader=csv.reader(csvfile, delimiter=self.delim)
 			for row in reader:
 				self.data.append([c.decode(self.encoding) for c in row])
+		self.findDupes()
+		if self.removeDupesFromList:
+			self.removeDupes()
 		self.updateStatus()
-		tooltip(_("Loaded %d notes" % len(self.data)), period=500)
+		
+		tooltip(_("Queue: %d (Dupe: %d)" % (len(self.data),len(self.dupe))), period=1500)
 	
+	def findDupes(self):
+		""" Finds all duplicates from self.data and writes them to self.dupe """
+		from ignore_dupes import expressionDupe
+		for item in self.data:
+			delim=unicode('・',self.encoding)
+			exp=item[0].split(delim)[-1]
+			print("Checking %s" % exp)
+			if expressionDupe(self.mw.col,exp):
+				self.dupe.append(item)
+	
+	def removeDupes(self):
+		""" Removes all duplicates from self.data """
+		for item in self.dupe:
+			self.data.remove(item)
 	# Saving....
 	def updateRest(self):
 		""" Builds self.rest from self.data and self.added """
@@ -168,6 +209,8 @@ class cbcImport():
 		if note['Expression'] in current[0]:
 			self.lastAdded=True
 			self.added.append(current)
+			if self.removeAddedFromList:
+				self.data.remove(current)
 		else:
 			self.lastAdded=False
 		self.updateStatus()
@@ -184,6 +227,7 @@ class cbcImport():
 	def setupMyMenu(self,AddCardsObj):
 		""" Creates the line of buttons etc. to control this addon. """
 		self.e=AddCardsObj.editor
+		self.mw=AddCardsObj.mw
 		# adapted from from /usr/share/anki/aqt/editor.py Lines 350
 		self.newIconsBox=QHBoxLayout()
 		if not isMac:
