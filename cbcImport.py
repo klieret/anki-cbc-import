@@ -169,11 +169,15 @@ class cbcImport():
 		""" Inserts next entry. """
 		if self.currentIdx<len(self.data)-1:
 			self.currentIdx+=1
+		else:
+			tooltip(_("Already last card"), period=500)
 		self.insert()
 	def previous(self):
 		""" Inserts previous entry. """
 		if self.currentIdx>=1:
 			self.currentIdx-=1
+		else:
+			tooltip(_("Already first card"), period=500)
 		self.insert()
 	def first(self):
 		""" Inserts first entry. """
@@ -217,7 +221,7 @@ class cbcImport():
 		
 	def myTooltip(self,*args):
 		if self.lastAdded:
-			tooltip(_("Added to added"), period=00)
+			tooltip(_("Added to added"), period=1000)
 		else:
 			tooltip(_("NOT ADDED TO ADDED!"), period=1000)
 
