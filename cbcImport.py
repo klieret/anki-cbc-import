@@ -196,6 +196,10 @@ class cbcImport():
 	# -----------------------------
 	def last(self):
 		""" Inserts last entry. """
+		if self.currentIdx<len(self.queue)-1:
+			self.currentIdx+=1
+		else:
+			tooltip(_("Already last card"), period=500)
 		self.currentIdx=len(self.queue)-1
 		self.insert()
 	def next(self):
@@ -218,6 +222,9 @@ class cbcImport():
 		self.insert()
 	def reverse(self):
 		""" Reverses the ordering of the queue. """
+		if len(self.queue)==0:
+			tooltip(_("Queue is empty!"),period=1000)
+			return
 		self.data.reverse()
 		self.added.reverse()
 		self.dupe.reverse()
