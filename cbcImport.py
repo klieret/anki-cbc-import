@@ -13,6 +13,10 @@ import csv
 import os.path
 import glob
 
+# 1. RESTART ANKI AFTER EACH EDIT (ELSE IT WON'T TAKE EFFECT)
+# 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
+# 3. DON'T USE SPACES TO INDENT IN THIS FILE.
+
 class cbcImport():
 	def __init__(self):
 		""" init and basic configuration """
@@ -20,8 +24,8 @@ class cbcImport():
 		
 		# file to import (change the "..." part)
 		#self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
-		self.importFile=os.path.expanduser('~/Desktop/rest.csv')
-		#self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] # last file of all files that are on Desktop and have extension .csv
+		#self.importFile=os.path.expanduser('~/Desktop/rest.csv')
+		self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] # last file of all files that are on Desktop and have extension .csv
 		# delimiter of the input file (character that separates
 		# different rows). E.g. '\t' for Tabulator, ';' for ; etc. 
 		self.delim='\t'
@@ -35,8 +39,10 @@ class cbcImport():
 		# Note that the file contents will be overwritten!
 		# If self.addedFile=None or False or "" is specified
 		# no output will be created for addedFile (restFile analogous)
-		self.addedFile=os.path.expanduser('~/Desktop/added.csv')
+		self.addedFile=None
 		self.restFile=os.path.expanduser('~/Desktop/rest.csv')
+		#self.addedFile=os.path.expanduser('~/Desktop/added.csv')
+		#self.restFile=os.path.expanduser('~/Desktop/rest.csv')
 		#self.addedFile=importFileName+"_added"+importFileExt
 		#self.restFile=importFileName+"_rest"+importFileExt
 		
@@ -137,6 +143,7 @@ class cbcImport():
 		for i in range(len(self.data)):
 			if not self.data[i] in self.added:
 				self.rest.append(self.data[i])
+
 	def save(self):
 		""" Saves self.added and self.rest to the resp. files """
 		if self.addedFile:
@@ -152,6 +159,15 @@ class cbcImport():
 				for row in self.rest:
 					row=[c.encode(self.encoding) for c in row]
 					writer.writerow(row)
+		# tooltip
+		text=""
+		if self.addedFile: 
+			text+="Saved added "
+		if self.restFile:
+			text+="Saved rest"
+		if text=="":
+			text+="NO FILE TO SAVE"
+		tooltip(_(text), period=1500)
 	
 	def clean(self):
 		""" Resets all fields. """
@@ -296,6 +312,8 @@ class cbcImport():
 		""" Updates button texts e.g. to display 
 		number of remaining entries etc. """
 		def short(string):
+			if not string:
+				return "None"
 			mlen=10
 			if len(string)<=mlen:
 				return string
