@@ -14,6 +14,9 @@ import os.path
 import glob
 import copy
 
+
+# TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
+
 # 1. RESTART ANKI AFTER EACH EDIT (ELSE IT WON'T TAKE EFFECT)
 # 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
 # 3. DON'T USE SPACES TO INDENT IN THIS FILE.
@@ -74,8 +77,6 @@ class cbcImport():
 		
 		# ----------- BEGIN CONFIG -----------
 		delim=unicode('・',self.encoding)
-		note['Expression']=current[0].split(delim)[-1]
-		
 		def enum(string):
 			split=string.split('/')
 			out=""
@@ -87,6 +88,7 @@ class cbcImport():
 					out+=str(i+1)+". "+split[i]+'<br>'
 			return out.strip()
 		
+		note['Expression']=current[0].split(delim)[-1]
 		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
 		
@@ -158,19 +160,7 @@ class cbcImport():
 		for item in self.data:
 			if not item in self.dupe and not item in self.added:
 				self.rest.append(item)
-		
-	
-	#def removeDupes(self):
-	#	""" Removes all duplicates from self.data """
-	#	for item in self.dupe:
-	#		self.rest.remove(item)
-	# Saving....
-#	def updateRest(self):
-#		""" Builds self.rest from self.data and self.added """
-#		for i in range(len(self.data)):
-#			if not self.data[i] in self.added:
-#				self.rest.append(self.data[i])
-		
+
 	def save(self):
 		""" Saves self.added and self.rest to the resp. files """
 		if self.addedFile:
@@ -180,7 +170,6 @@ class cbcImport():
 					row=[c.encode(self.encoding) for c in row]
 					writer.writerow(row)
 		if self.restFile:
-			self.updateRest()
 			with open(self.restFile,'wb') as csvfile:
 				writer=csv.writer(csvfile, delimiter=self.delim)
 				for row in self.rest:
@@ -195,8 +184,6 @@ class cbcImport():
 		if text=="":
 			text+="NO FILE TO SAVE"
 		tooltip(_(text), period=1500)
-	
-	
 	
 	# Controlling self.Idx
 	# -----------------------------
@@ -223,8 +210,11 @@ class cbcImport():
 		self.currentIdx=0
 		self.insert()
 	def reverse(self):
-		""" Reverses the ordering. """
+		""" Reverses the ordering of the queue. """
 		self.data.reverse()
+		self.added.reverse()
+		self.dupe.reverse()
+		self.queue.reverse()
 		self.currentIdx=len(self.queue)-1-self.currentIdx
 		self.updateStatus()
 		
@@ -258,6 +248,8 @@ class cbcImport():
 		self.updateStatus()
 		
 	def myTooltip(self,*args):
+		""" Has to be called separately to overwrite native
+		'Added' tooltip. """
 		if self.lastAdded:
 			tooltip(_("Added to added"), period=1000)
 		else:
