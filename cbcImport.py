@@ -70,7 +70,8 @@ class cbcImport():
 		
 		# was last Card added to self.added?
 		self.lastAdded=None
-		self._buttons={}
+		
+		self.buttons={}
 
 	def wrap(self, note, current):
 		""" Updates note $note with data from $current. """
@@ -272,15 +273,17 @@ class cbcImport():
 			self.newIconsBox.setSpacing(14)
 		self.e.outerLayout.addLayout(self.newIconsBox)
 		# Buttons
-		self.addMyButton("cbcNewInputFile", self.newInputFile, text="Choose File", tip="Choose new input file.", size="30x120", )
-		self.addMyButton("cbcLoad", self.load, text="Load", tip="Load file", size="30x60", )
-		self.addMyButton("cbcReverse", self.reverse, text="Reverse", tip="Reverse Order", size="30x60", )
-		self.addMyButton("cbcSave", self.save, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
-		self.addMyButton("cbcFirst", self.first, text="<<", tip="Fill in first entry", size="30x50",)
-		self.addMyButton("cbcPrevious", self.previous, text="<", tip="Fill in previous entry (Ctrl+H)", size="30x50" , key="Ctrl+H")
-		self.addMyButton("cbcFill", self.insert, text="X", tip="Fill in form (Ctrl+F)", size="30x50",  key="Ctrl+F")
-		self.addMyButton("cbcNext", self.next, text=">", tip="Fill in next entry (Ctrl+G)", size="30x50", key="Ctrl+G")
-		self.addMyButton("cbcLast", self.last, text=">>", tip="Fill in last entry", size="30x50" , )
+		# Buttons starting with cbcQ_ are only active if queue is non empty
+		self.addMyButton("cbc_NewInputFile", self.newInputFile, text="Choose File", tip="Choose new input file.", size="30x120", )
+		self.addMyButton("cbc_Load", self.load, text="Load", tip="Load file", size="30x60", )
+		self.addMyButton("cbcQ_Reverse", self.reverse, text="Reverse", tip="Reverse Order", size="30x60", )
+		self.addMyButton("cbcS_ave", self.save, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
+		self.addMyButton("cbcQ_First", self.first, text="<<", tip="Fill in first entry", size="30x50",)
+		self.addMyButton("cbcQ_Previous", self.previous, text="<", tip="Fill in previous entry", size="30x50" , )
+		self.addMyButton("cbcQ_Fill", self.insert, text="X", tip="Fill in form (Ctrl+F)", size="30x50",  key="Ctrl+F")
+		self.addMyButton("cbcQ_Next", self.next, text=">", tip="Fill in next entry (Ctrl+G)", size="30x50", key="Ctrl+G")
+		self.addMyButton("cbcQ_Last", self.last, text=">>", tip="Fill in last entry", size="30x50" , )
+		# self.updateButtonStates() # maybe tooltips are better...
 		# Status Field
 		self.statusIconsBox=QHBoxLayout()
 		if not isMac:
@@ -319,9 +322,14 @@ class cbcImport():
 		if check:
 			b.setCheckable(True)
 		self.newIconsBox.addWidget(b)
-		self._buttons[name] = b
+		self.buttons[name] = b
 		return b
 	
+	def updateButtonStates(self):
+		for buttonName in self.buttons:
+			if buttonName.startswith('cbcQ_'):
+				self.buttons[buttonName].setEnabled(len(self.queue)>0)
+
 	def updateStatus(self):
 		""" Updates button texts e.g. to display 
 		number of remaining entries etc. """
