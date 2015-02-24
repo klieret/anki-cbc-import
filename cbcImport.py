@@ -39,8 +39,11 @@ class cbcImport():
 		
 		# character encoding to be used for input and output
 		self.encoding='utf-8'
-		
-		importFileName,importFileExt=os.path.splitext(self.importFile)
+		if self.importFile:
+			importFileName,importFileExt=os.path.splitext(self.importFile)
+		else:
+			importFileName=None
+			importFileExt=None
 		# files where the subset of added/remaining Cards will be Saved
 		# (by default: self.importFile - file ending + "added"/"rest" + extension)
 		# Note that the file contents will be overwritten!
