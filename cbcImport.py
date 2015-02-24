@@ -29,7 +29,10 @@ class cbcImport():
 		# file to import (change the "..." part)
 		#self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
 		#self.importFile=os.path.expanduser('~/Desktop/rest.csv')
-		self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] # last file of all files that are on Desktop and have extension .csv
+		try:
+			self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] # last file of all files that are on Desktop and have extension .csv
+		except:
+			self.importFile=None
 		# delimiter of the input file (character that separates
 		# different rows). E.g. '\t' for Tabulator, ';' for ; etc. 
 		self.delim='\t'
@@ -132,10 +135,15 @@ class cbcImport():
 		""" Loads input file to self.data. """
 		# initialize self.data
 		self.data=[]
-		with open(self.importFile,'r') as csvfile:
-			reader=csv.reader(csvfile, delimiter=self.delim)
-			for row in reader:
-				self.data.append([c.decode(self.encoding) for c in row])
+		if self.importFile:
+			try:
+				with open(self.importFile,'r') as csvfile:
+					reader=csv.reader(csvfile, delimiter=self.delim)
+					for row in reader:
+						self.data.append([c.decode(self.encoding) for c in row])
+			except:
+				tooltip(_("Could not open input file %s" % self.importFile),period=1500)
+				pass
 		# initialize subsets
 		self.fullUpdateDupes()
 		self.fullUpdateRest()
@@ -165,17 +173,24 @@ class cbcImport():
 	def save(self):
 		""" Saves self.added and self.rest to the resp. files """
 		if self.addedFile:
-			with open(self.addedFile,'wb') as csvfile:
-				writer=csv.writer(csvfile, delimiter=self.delim)
-				for row in self.added:
-					row=[c.encode(self.encoding) for c in row]
-					writer.writerow(row)
+			try:
+				with open(self.addedFile,'wb') as csvfile:
+					writer=csv.writer(csvfile, delimiter=self.delim)
+					for row in self.added:
+						row=[c.encode(self.encoding) for c in row]
+						writer.writerow(row)
+			except:
+				tooltip(_("Could not open output file %s" % self.addedFile),period=1500)
+				
 		if self.restFile:
-			with open(self.restFile,'wb') as csvfile:
-				writer=csv.writer(csvfile, delimiter=self.delim)
-				for row in self.rest:
-					row=[c.encode(self.encoding) for c in row]
-					writer.writerow(row)
+			try:
+				with open(self.restFile,'wb') as csvfile:
+					writer=csv.writer(csvfile, delimiter=self.delim)
+					for row in self.rest:
+						row=[c.encode(self.encoding) for c in row]
+						writer.writerow(row)
+			except:
+				tooltip(_("Could not open output file %s" % self.restFile),period=1500)
 
 	def saveButtonPushed(self):
 		""" What happens if save button is pushed:
@@ -224,7 +239,7 @@ class cbcImport():
 		""" Reverses the ordering of the queue. """
 		if len(self.queue)==0:
 			tooltip(_("Queue is empty!"),period=1000)
-			return
+			return	
 		self.data.reverse()
 		self.added.reverse()
 		self.dupe.reverse()
@@ -256,6 +271,9 @@ class cbcImport():
 		if note['Expression'] in current[0]:
 			self.lastAdded=True
 			self.added.append(current)
+			# FIXME: What if other mode?
+			# dupes are not in self.rest
+			# also remove from queue!
 			self.rest.remove(current)
 		else:
 			self.lastAdded=False
