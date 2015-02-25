@@ -56,7 +56,8 @@ class cbcImport():
 		#self.addedFile=importFileName+"_added"+importFileExt
 		#self.restFile=importFileName+"_rest"+importFileExt
 		
-		self.careForDupes=True # Should dupes be treated differently?
+		self.careForDupes=False # Should dupes be treated differently?
+		self.createEmptyFiles=False # Should export files created even if data empty?
 		
 		# ----------- END CONFIG -----------
 		
@@ -175,7 +176,7 @@ class cbcImport():
 
 	def save(self):
 		""" Saves self.added and self.rest to the resp. files """
-		if self.addedFile:
+		if self.addedFile and (self.createEmptyFiles or len(self.added)>0):
 			try:
 				with open(self.addedFile,'wb') as csvfile:
 					writer=csv.writer(csvfile, delimiter=self.delim)
@@ -185,7 +186,7 @@ class cbcImport():
 			except:
 				tooltip(_("Could not open output file %s" % self.addedFile),period=1500)
 				
-		if self.restFile:
+		if self.restFile and (self.createEmptyFiles or len(self.rest)>0):
 			try:
 				with open(self.restFile,'wb') as csvfile:
 					writer=csv.writer(csvfile, delimiter=self.delim)
