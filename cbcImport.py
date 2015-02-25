@@ -153,6 +153,7 @@ class cbcImport():
 				tooltip(_("Could not open input file %s" % self.importFile),period=1500)
 				pass
 		# initialize subsets
+		self.added=[]
 		self.fullUpdateDupes()
 		self.fullUpdateRest()
 		self.queue=self.rest
