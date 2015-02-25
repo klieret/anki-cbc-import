@@ -16,6 +16,9 @@ import copy
 
 
 # TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
+# TODO: neue Base
+# Problem: Curser bleibt stehen, wenn jetzt QUEUE verkürzt wird
+# evtl. curser out of range?
 
 # 1. RESTART ANKI AFTER EACH EDIT (ELSE IT WON'T TAKE EFFECT)
 # 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
@@ -29,6 +32,7 @@ class cbcImport():
 		# file to import (change the "..." part)
 		#self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
 		#self.importFile=os.path.expanduser('~/Desktop/rest.csv')
+		self.defaultDir=os.path.expanduser("~/Desktop/")
 		try:
 			self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] # last file of all files that are on Desktop and have extension .csv
 		except:
@@ -56,7 +60,7 @@ class cbcImport():
 		#self.addedFile=importFileName+"_added"+importFileExt
 		#self.restFile=importFileName+"_rest"+importFileExt
 		
-		self.careForDupes=False # Should dupes be treated differently?
+		self.careForDupes=True # Should dupes be treated differently?
 		self.createEmptyFiles=False # Should export files created even if data empty?
 		
 		# ----------- END CONFIG -----------
@@ -130,7 +134,7 @@ class cbcImport():
 	# ------------------------
 
 	def newInputFile(self):
-		importFile=QFileDialog.getSaveFileName(options=QFileDialog.DontConfirmOverwrite)
+		importFile=QFileDialog.getSaveFileName(None, "Pick a file to import", self.defaultDir, options=QFileDialog.DontConfirmOverwrite)
 		if importFile:
 			self.importFile=importFile
 		self.updateStatus()
