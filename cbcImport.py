@@ -109,10 +109,13 @@ class cbcImport():
 	def insert(self):
 		""" Inserts an entry from self.queue
 		into the Anki Dialog """
-		if not self.currentIdx < len(self.queue):
-			# empty queue
+
+		if len(self.queue)==0:
 			tooltip(_("Queue is empty!"),period=1000)
 			return
+		elif not self.currentIdx < len(self.queue):
+			tooltip(_("Was last entry!"),period=1000)
+			self.currentIdx=len(self.queue)-1
 		
 		self.clean()	# remove All field entries
 		
