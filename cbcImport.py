@@ -13,10 +13,12 @@ import csv
 import os.path
 import glob
 import copy
+import os
 
 
-# TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
+# TODO: FIELDS MORE CLaEAR (MULTIPLE USED EXPRESSION ETC.)
 # TODO: neue Base
+# TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...) 
 # Problem: Curser bleibt stehen, wenn jetzt QUEUE verkürzt wird
 # evtl. curser out of range?
 
@@ -99,7 +101,6 @@ class cbcImport():
 				for i in range(n):
 					out+=str(i+1)+". "+split[i]+'<br>'
 			return out.strip()
-		
 		note['Expression']=current[0].split(delim)[-1]
 		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
@@ -154,7 +155,6 @@ class cbcImport():
 						self.data.append([c.decode(self.encoding) for c in row])
 			except:
 				tooltip(_("Could not open input file %s" % self.importFile),period=1500)
-				pass
 		# initialize subsets
 		self.added=[]
 		self.fullUpdateDupes()
@@ -217,7 +217,12 @@ class cbcImport():
 		if text=="":
 			text+="NO FILE TO SAVE"
 		tooltip(_(text), period=1500)
-	
+
+	def show(self):
+		if self.importFile:
+			os.system("leafpad %s" % self.importFile)
+		else:
+			tooltip(_("No input File!"), period=1500)
 	
 	# Controlling self.Idx
 	# -----------------------------
@@ -319,6 +324,7 @@ class cbcImport():
 		# Buttons starting with cbcQ_ are only active if queue is non empty
 		self.addMyButton("cbc_NewInputFile", self.newInputFile, text="Choose File", tip="Choose new input file.", size="30x120", )
 		self.addMyButton("cbc_Load", self.load, text="Load", tip="Load file", size="30x60", )
+		self.addMyButton("cbc_Show", self.show, text="Show", tip="Show file", size="30x60", )
 		self.addMyButton("cbcQ_Reverse", self.reverse, text="Reverse", tip="Reverse Order", size="30x60", )
 		self.addMyButton("cbcS_ave", self.saveButtonPushed, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
 		self.addMyButton("cbcQ_First", self.first, text="<<", tip="Fill in first entry", size="30x50",)
