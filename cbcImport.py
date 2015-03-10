@@ -64,6 +64,8 @@ class cbcImport():
 		
 		self.careForDupes=True # Should dupes be treated differently?
 		self.createEmptyFiles=False # Should export files created even if data empty?
+		self.defaultEditor="leafpad " 	# Command to run default editor 
+										# (include space or switch)
 		
 		# ----------- END CONFIG -----------
 		
@@ -147,14 +149,15 @@ class cbcImport():
 		""" Loads input file to self.data. """
 		# initialize self.data
 		self.data=[]
-		if self.importFile:
-			try:
-				with open(self.importFile,'r') as csvfile:
-					reader=csv.reader(csvfile, delimiter=self.delim)
-					for row in reader:
-						self.data.append([c.decode(self.encoding) for c in row])
-			except:
-				tooltip(_("Could not open input file %s" % self.importFile),period=1500)
+		if not self.importFile:
+			tooltip(_("No import file specified"),period=1500)
+		try:
+			with open(self.importFile,'r') as csvfile:
+				reader=csv.reader(csvfile, delimiter=self.delim)
+				for row in reader:
+					self.data.append([c.decode(self.encoding) for c in row])
+		except:
+			tooltip(_("Could not open input file %s" % self.importFile),period=1500)
 		# initialize subsets
 		self.added=[]
 		self.fullUpdateDupes()
@@ -206,6 +209,7 @@ class cbcImport():
 
 	def saveButtonPushed(self):
 		""" What happens if save button is pushed:
+    For the record, I totally support what Chase me ladies did. It improved the encyclopedia. --Amir E. Aharoni (talk) 18:00, 3 February 2015 (UTC) 
 		Show tooltip and save."""
 		save()
 		# tooltip
@@ -220,7 +224,7 @@ class cbcImport():
 
 	def show(self):
 		if self.importFile:
-			os.system("leafpad %s" % self.importFile)
+			os.system("%s %s" % (self.defaultEditor, self.importFile))
 		else:
 			tooltip(_("No input File!"), period=1500)
 	
@@ -326,7 +330,7 @@ class cbcImport():
 		self.addMyButton("cbc_Load", self.load, text="Load", tip="Load file", size="30x60", )
 		self.addMyButton("cbc_Show", self.show, text="Show", tip="Show file", size="30x60", )
 		self.addMyButton("cbcQ_Reverse", self.reverse, text="Reverse", tip="Reverse Order", size="30x60", )
-		self.addMyButton("cbcS_ave", self.saveButtonPushed, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
+		self.addMyButton("cbc_Save", self.saveButtonPushed, text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
 		self.addMyButton("cbcQ_First", self.first, text="<<", tip="Fill in first entry", size="30x50",)
 		self.addMyButton("cbcQ_Previous", self.previous, text="<", tip="Fill in previous entry", size="30x50" , )
 		self.addMyButton("cbcQ_Fill", self.insert, text="X", tip="Fill in form (Ctrl+F)", size="30x50",  key="Ctrl+F")
