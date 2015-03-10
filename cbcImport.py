@@ -156,6 +156,7 @@ class cbcImport():
 				reader=csv.reader(csvfile, delimiter=self.delim)
 				for row in reader:
 					self.data.append([c.decode(self.encoding) for c in row])
+					print(row[0].decode(self.encoding))
 		except:
 			tooltip(_("Could not open input file %s" % self.importFile),period=1500)
 		# initialize subsets
@@ -173,7 +174,9 @@ class cbcImport():
 			return
 		from ignore_dupes import expressionDupe
 		for item in self.data:
-			delim=unicode('・',self.encoding)
+			#print(item[0].decode(self.encoding))
+			print(item[0])
+			delim='・'.decode('utf-8')  # NOT self.encoding!
 			exp=item[0].split(delim)[-1]
 			print("Checking %s" % exp)
 			if expressionDupe(self.mw.col,exp):
@@ -224,7 +227,7 @@ class cbcImport():
 
 	def show(self):
 		if self.importFile:
-			os.system("%s %s" % (self.defaultEditor, self.importFile))
+			os.system("%s %s &" % (self.defaultEditor, self.importFile))
 		else:
 			tooltip(_("No input File!"), period=1500)
 	
