@@ -140,7 +140,8 @@ class cbcImport():
 	# ------------------------
 
 	def newInputFile(self):
-		importFile=QFileDialog.getSaveFileName(None, "Pick a file to import", self.defaultDir, options=QFileDialog.DontConfirmOverwrite)
+		filters = "csv Files (*.csv);;All Files (*)"
+		importFile=QFileDialog.getSaveFileName(None, "Pick a file to import.", self.defaultDir, filters, options=QFileDialog.DontConfirmOverwrite)
 		if importFile:
 			self.importFile=importFile
 		self.updateStatus()
