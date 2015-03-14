@@ -149,6 +149,8 @@ class cbcImport():
 		""" Loads input file to self.data. """
 		# initialize self.data
 		self.data=[]
+		self.queue=[]
+		self.dupe=[]
 		if not self.importFile:
 			tooltip(_("No import file specified"),period=1500)
 		try:
@@ -156,7 +158,6 @@ class cbcImport():
 				reader=csv.reader(csvfile, delimiter=self.delim)
 				for row in reader:
 					self.data.append([c.decode(self.encoding) for c in row])
-					print(row[0].decode(self.encoding))
 		except:
 			tooltip(_("Could not open input file %s" % self.importFile),period=1500)
 		# initialize subsets
@@ -174,11 +175,8 @@ class cbcImport():
 			return
 		from ignore_dupes import expressionDupe
 		for item in self.data:
-			#print(item[0].decode(self.encoding))
-			print(item[0])
 			delim='・'.decode('utf-8')  # NOT self.encoding!
 			exp=item[0].split(delim)[-1]
-			print("Checking %s" % exp)
 			if expressionDupe(self.mw.col,exp):
 				self.dupe.append(item)
 	def fullUpdateRest(self):
@@ -289,18 +287,16 @@ class cbcImport():
 	def cardAdded(self, obj, note):
 		""" This function gets called, once a card is added and
 		is needed to update self.added (list of added cards) """
-		if len(self.data)==0:
-			return
-		current=self.queue[self.currentIdx]
-		if note['Expression'] in current[0]:
-			self.lastAdded=True
-			self.added.append(current)
-			# FIXME: What if other mode?
-			# dupes are not in self.rest
-			# also remove from queue!
-			self.rest.remove(current)
-		else:
-			self.lastAdded=False
+		self.lastAdded=False
+		if len(self.queue)>self.currentIdx:
+			current=self.queue[self.currentIdx]
+			if note['Expression'] in current[0]:
+				self.lastAdded=True
+				self.added.append(current)
+				# FIXME: What if other mode?
+				# dupes are not in self.rest
+				# also remove from queue!
+				self.rest.remove(current)
 		self.updateStatus()
 		
 	def myTooltip(self,*args):
