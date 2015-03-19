@@ -286,9 +286,15 @@ class cbcImport():
 		self.e.loadNote()
 	
 	def cardAdded(self, obj, note):
-		""" This function gets called, once a card is added and
+		""" This function gets called once a card is added and
 		is needed to update self.added (list of added cards) """
 		self.lastAdded=False
+		# sometimes, if inserts a note from the 
+		# csv but before adding resets all fields
+		# and adds a different card, it is still
+		# considered as a card of the csv file?
+		# maybe flush note before?
+		note.flush()
 		if len(self.queue)>self.currentIdx:
 			current=self.queue[self.currentIdx]
 			if note['Expression'] in current[0]:
