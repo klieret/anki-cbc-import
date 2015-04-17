@@ -19,6 +19,8 @@ import os
 # TODO: FIELDS MORE CLaEAR (MULTIPLE USED EXPRESSION ETC.)
 # TODO: neue Base
 # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...) 
+# TODO: keine Checks etc., wenn noch nicht mal mehr Datei geladen.
+# TODO: Button zum entladen von Datein
 # Problem: Curser bleibt stehen, wenn jetzt QUEUE verkürzt wird
 # evtl. curser out of range?
 
@@ -211,7 +213,6 @@ class cbcImport():
 
 	def saveButtonPushed(self):
 		""" What happens if save button is pushed:
-    For the record, I totally support what Chase me ladies did. It improved the encyclopedia. --Amir E. Aharoni (talk) 18:00, 3 February 2015 (UTC) 
 		Show tooltip and save."""
 		save()
 		# tooltip
@@ -289,15 +290,23 @@ class cbcImport():
 		""" This function gets called once a card is added and
 		is needed to update self.added (list of added cards) """
 		self.lastAdded=False
-		# sometimes, if inserts a note from the 
-		# csv but before adding resets all fields
-		# and adds a different card, it is still
-		# considered as a card of the csv file?
-		# maybe flush note before?
+		# save user input
+		# this seems to be neccessary
 		note.flush()
 		if len(self.queue)>self.currentIdx:
+			# current queue Element Expression
 			current=self.queue[self.currentIdx]
-			if note['Expression'] in current[0]:
+			exp=note['Expression']
+			# we have to check if the we really are adding an element
+			# of the queue. Problem is that we want to allow some tolerance
+			isqe=False
+			if len(exp)>=3: 
+				if exp in current[0]:
+					isque=True
+			else:
+				if exp==current[0]:
+					isque=True
+			if isque:
 				self.lastAdded=True
 				self.added.append(current)
 				# FIXME: What if other mode?
