@@ -299,7 +299,7 @@ class cbcImport():
 			exp=note['Expression']
 			# we have to check if the we really are adding an element
 			# of the queue. Problem is that we want to allow some tolerance
-			isqe=False
+			isque=False
 			if len(exp)>=3: 
 				if exp in current[0]:
 					isque=True
