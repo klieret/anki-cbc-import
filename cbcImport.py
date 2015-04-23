@@ -9,6 +9,8 @@ from aqt.qt import *
 
 from anki.hooks import addHook, runHook, wrap
 
+from ignore_dupes import expressionDupe
+
 import csv
 import os.path
 import glob
@@ -94,7 +96,8 @@ class cbcImport():
 		""" Updates note $note with data from $current. """
 		
 		# ----------- BEGIN CONFIG -----------
-		delim=unicode('・',self.encoding)
+		self.delim=unicode('・',self.encoding)
+		# TODO splitting as separate method
 		def enum(string):
 			split=string.split('/')
 			out=""
@@ -105,7 +108,7 @@ class cbcImport():
 				for i in range(n):
 					out+=str(i+1)+". "+split[i]+'<br>'
 			return out.strip()
-		note['Expression']=current[0].split(delim)[-1]
+		note['Expression']=current[0].split(self.delim)[-1]
 		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
 		
@@ -176,7 +179,6 @@ class cbcImport():
 		writes them to self.dupe. Else: do nothing. """
 		if not self.careForDupes:
 			return
-		from ignore_dupes import expressionDupe
 		for item in self.data:
 			delim='・'.decode('utf-8')  # NOT self.encoding!
 			exp=item[0].split(delim)[-1]
@@ -304,6 +306,7 @@ class cbcImport():
 				if exp in current[0]:
 					isque=True
 			else:
+				print(exp,current[0],exp==current[0].split(self.delim)[0])
 				if exp==current[0]:
 					isque=True
 			if isque:
