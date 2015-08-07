@@ -46,9 +46,24 @@ class DataSet(object):
         # imported to Anki.
         self._cursor = 0
 
+    def reverse(self):
+        self._data.reverse()
+        self._cursor = len(self._data) -1 -self._cursor
+
     def get_current(self):
 
         return self._data[self._cursor]
+
+    def reduced_cursor(self):
+        i = 0
+        for i in range(self._cursor):
+            if self._data[i].is_in_queue():
+                i += 1
+        return i
+
+    def set_current(self, elem):
+
+        self._data[self._cursor] = elem 
 
     def load(self, filename):
         """ Loads input file to self._data. """
@@ -73,17 +88,45 @@ class DataSet(object):
                 element.set_fields_hook()
                 self._data.append(element)
 
+    # Statistics
+
+    def count_data(self, boolean):
+        i = 0
+        for entry in self._data:
+            if boolean(entry):
+                i += 1
+        return i
+
+
+
+    def len_all(self):
+        return self.count_data(lambda e: True)
+
+    def len_added(self):
+        return self.count_data(lambda e: e.is_added())
+
+    def len_dupe(self):
+        return self.count_data(lambda e: e.is_dupe())
+        
+    def len_queue(self):
+        return self.count_data(lambda e: e.is_in_queue())
+
+
+
     # Navigate with skipping.
 
-    def go(self, func, start=None):
+    def go(self, func, start=None, dry=False):
         """ Updates self._cursor. 
         Starts with cursor = $start (default: func(self.cursor)
         and repeatedly call cursor = fun(cursor).
         Once the element at cursor is an element that should be in 
         the queue, we set self._cursor = cursor.
-        Returns True if self._cursor was changed, False otherwise. """
+        Returns True if self._cursor was changed, False otherwise. 
+        If dry == True: self._cursor remains untouched, only the
+        return value is given."""
         
         old_cursor = self._cursor
+        new_cursor = self._cursor
         
         if start == None:
             # do NOT use "if not start", because start = 0 gets 
@@ -95,25 +138,31 @@ class DataSet(object):
         while cursor in range(len(self._data)):
             print(cursor)
             if self._data[cursor].is_in_queue:
-                self._cursor = cursor
-                print("update")
+                new_cursor = cursor
                 break 
             cursor = func(cursor)
         
-        return old_cursor != self._cursor
+        if not dry:
+            self._cursor = new_cursor
 
-    def go_next(self):
+        return new_cursor == old_cursor
+
+    def go_next(self, dry=False):
         """ Go to next queue element 
         (i.e. sets self._cursor to the index of the next queue element)
-        Returns False if we are already at the last queue element. """
-        return self.go(lambda x: x+1)
+        Returns False if we are already at the last queue element.
+        If dry == True: self._cursor remains untouched, only the
+        return value is given. """
+        return self.go(lambda x: x+1, dry=dry)
 
-    def go_previous(self):
+    def go_previous(self, dry=False):
         """ Go to previous queue element 
         (i.e. sets self._cursor to the index of the previous queue element)
-        Returns False if we are already at the first queue element. """
+        Returns False if we are already at the first queue element.
+        If dry == True: self._cursor remains untouched, only the
+        return value is given. """
 
-        return self.go(lambda x: x-1)
+        return self.go(lambda x: x-1, dry=dry)
 
     def go_first(self):
         """ Go to first queue element 
@@ -128,3 +177,26 @@ class DataSet(object):
         Returns False if we are already at the last queue element. """
         
         return self.go(lambda x: x-1, start=len(self._data)-1)
+
+    def is_go_previous_possible(self):
+        return self.go_next(dry=True)
+
+    def is_go_next_possible(self):
+        return self.go_previous(dry=True)
+
+    def is_queue_empty(self):
+        return self.len_queue() == 0
+
+    def is_in_queue(self):
+        """ """
+        # todo: make real thing
+        return True
+
+        # isque=False
+        # if len(exp)>=3: 
+        #     if exp in current.fields['Expression']:
+        #         isque=True
+        # else:
+        #     print(exp,current[0],exp==current[0].split(self.delim)[-1])
+        #     if exp==current[0].split(self.delim)[-1]:
+        #         isque=True

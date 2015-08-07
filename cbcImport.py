@@ -17,6 +17,8 @@ import glob
 import copy
 import os
 
+from data_classes import *
+
 
 # TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
 # TODO: neue Base
@@ -40,59 +42,51 @@ class cbcImport():
         # file to import (change the "..." part)
         #self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
         #self.importFile=os.path.expanduser('~/Desktop/rest.csv')
-        self.defaultDir=os.path.expanduser("~/Desktop/")
+        self.defaultDir = os.path.expanduser("~/Desktop/")
         try:
-            self.importFile=glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] # last file of all files that are on Desktop and have extension .csv
+            # last file of all files that are on Desktop and have extension .csv
+            self.importFile = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] 
         except:
-            self.importFile=None
+            self.importFile = None
         # delimiter of the input file (character that separates
         # different rows). E.g. '\t' for Tabulator, ';' for ; etc. 
-        self.delim='\t'
+        self.delim = '\t'
         
         # character encoding to be used for input and output
-        self.encoding='utf-8'
+        self.encoding = 'utf-8'
         if self.importFile:
-            importFileName,importFileExt=os.path.splitext(self.importFile)
+            importFileName, importFileExt = os.path.splitext(self.importFile)
         else:
-            importFileName=None
-            importFileExt=None
+            importFileName = None
+            importFileExt = None
         # files where the subset of added/remaining Cards will be Saved
         # (by default: self.importFile - file ending + "added"/"rest" + extension)
         # Note that the file contents will be overwritten!
         # If self.addedFile=None or False or "" is specified
         # no output will be created for addedFile (restFile analogous)
-        self.addedFile=None
-        self.restFile=os.path.expanduser('~/Desktop/rest.csv')
+        self.addedFile = None
+        self.restFile = os.path.expanduser('~/Desktop/rest.csv')
         #self.addedFile=os.path.expanduser('~/Desktop/added.csv')
         #self.restFile=os.path.expanduser('~/Desktop/rest.csv')
         #self.addedFile=importFileName+"_added"+importFileExt
         #self.restFile=importFileName+"_rest"+importFileExt
         
-        self.careForDupes=True # Should dupes be treated differently?
-        self.createEmptyFiles=False # Should export files created even if data empty?
-        self.defaultEditor="leafpad "   # Command to run default editor 
+        self.careForDupes  =True # Should dupes be treated differently?
+        self.createEmptyFiles = False # Should export files created even if data empty?
+        self.defaultEditor = "leafpad "   # Command to run default editor 
                                         # (include space or switch)
         
         # ----------- END CONFIG -----------
         
-        # data from import File will be saved in self.data
-        # format: [[field1,field2,...],[field1,field2,...]]
-        self.data=[] 
-        # subsets of self.data 
-        self.added=[]   # added cards
-        self.rest=[]    # remaining cards
-        self.dupe=[]    # duplicates with anki Cards
-        self.queue=[]   # currentQueue
+        self.data =  DataSet()
         
-        self.currentIdx=0   # cursor in self.queue
-        
-        self.e=None     # instance of the Editor window
-        self.mw=None    # instance of main window
+        self.e = None     # instance of the Editor window
+        self.mw = None    # instance of main window
         
         # was last Card added to self.added?
-        self.lastAdded=None
+        self.lastAdded = None
         
-        self.buttons={}
+        self.buttons = {}
 
     def wrap(self, note, current):
         """ Updates note $note with data from $current. """
@@ -120,17 +114,16 @@ class cbcImport():
         """ Inserts an entry from self.queue
         into the Anki Dialog """
 
-        if len(self.queue)==0:
+        if self.data.is_queue_empty():
             tooltip(_("Queue is empty!"),period=1000)
             return
-        elif not self.currentIdx < len(self.queue):
+        elif self.data.is_last():
             tooltip(_("Was last entry!"),period=1000)
-            self.currentIdx=len(self.queue)-1
         
         self.clean()    # remove All field entries
         
-        current=self.queue[self.currentIdx] #source
-        note=copy.copy(self.e.note)         #target
+        current = self.queue[self.currentIdx] #source
+        note = copy.copy(self.e.note)         #target
         
         self.e.setNote(self.wrap(note,current))
         
@@ -140,7 +133,7 @@ class cbcImport():
     def clean(self):
         """ Resets all fields. """
         for field in mw.col.models.field_names(self.e.note.model()):
-            self.e.note[field]=''
+            self.e.note[field] = ''
         self.e.note.flush()
 
     # Loading/Saving file
@@ -148,91 +141,65 @@ class cbcImport():
 
     def newInputFile(self):
         filters = "csv Files (*.csv);;All Files (*)"
-        importFile=QFileDialog.getSaveFileName(None, "Pick a file to import.", self.defaultDir, filters, options=QFileDialog.DontConfirmOverwrite)
+        import_file = QFileDialog.getSaveFileName(None, "Pick a file to import.", 
+            self.defaultDir, filters, options=QFileDialog.DontConfirmOverwrite)
         if importFile:
-            self.importFile=importFile
+            self.importFile = import_file
         self.updateStatus()
     
     def load(self):
         """ Loads input file to self.data. """
-        # initialize self.data
-        self.currentIdx=0 
-        self.added=[]
-        self.rest=[]
-        self.data=[]
-        self.queue=[]
-        self.dupe=[]
+        self.data = DataSet()
+
         if not self.importFile:
             tooltip(_("No import file specified"),period=1500)
         try:
-            with open(self.importFile,'r') as csvfile:
-                reader=csv.reader(csvfile, delimiter=self.delim)
-                for row in reader:
-                    self.data.append([c.decode(self.encoding) for c in row])
+            self.data.load(self.importFile)
         except:
             tooltip(_("Could not open input file %s" % self.importFile),period=1500)
-        # initialize subsets
-        self.added=[]
-        self.fullUpdateDupes()
-        self.fullUpdateRest()
-        self.queue=self.rest
+        
         # status
         self.updateStatus()
-        tooltip(_("All: %d (Dupe: %d)" % (len(self.data),len(self.dupe))), period=1500)
+        tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), len(self.data.len_dupe()))), period=1500)
     
-    def fullUpdateDupes(self):
-        """ If self.careForDupes==True: Finds all duplicates from self.data and
-        writes them to self.dupe. Else: do nothing. """
-        if not self.careForDupes:
-            return
-        for item in self.data:
-            delim='・'.decode('utf-8')  # NOT self.encoding!
-            exp=item[0].split(delim)[-1]
-            if expressionDupe(self.mw.col,exp):
-                self.dupe.append(item)
-    
-    def fullUpdateRest(self):
-        """ Generates self.rest from self.data by substract self.dupe and self.added. """
-        self.rest=[]
-        for item in self.data:
-            if not item in self.dupe and not item in self.added:
-                self.rest.append(item)
 
     def save(self):
         """ Saves self.added and self.rest to the resp. files """
-        if self.addedFile and (self.createEmptyFiles or len(self.added)>0):
-            try:
-                with open(self.addedFile,'wb') as csvfile:
-                    writer=csv.writer(csvfile, delimiter=self.delim)
-                    for row in self.added:
-                        row=[c.encode(self.encoding) for c in row]
-                        writer.writerow(row)
-            except:
-                tooltip(_("Could not open output file %s" % self.addedFile),period=1500)
+        pass
+
+        # if self.addedFile and (self.createEmptyFiles or len(self.added)>0):
+        #     try:
+        #         with open(self.addedFile,'wb') as csvfile:
+        #             writer=csv.writer(csvfile, delimiter=self.delim)
+        #             for row in self.added:
+        #                 row=[c.encode(self.encoding) for c in row]
+        #                 writer.writerow(row)
+        #     except:
+        #         tooltip(_("Could not open output file %s" % self.addedFile),period=1500)
                 
-        if self.restFile and (self.createEmptyFiles or len(self.rest)>0):
-            try:
-                with open(self.restFile,'wb') as csvfile:
-                    writer=csv.writer(csvfile, delimiter=self.delim)
-                    for row in self.rest:
-                        row=[c.encode(self.encoding) for c in row]
-                        writer.writerow(row)
-            except:
-                tooltip(_("Could not open output file %s" % self.restFile),period=1500)
+        # if self.restFile and (self.createEmptyFiles or len(self.rest)>0):
+        #     try:
+        #         with open(self.restFile,'wb') as csvfile:
+        #             writer=csv.writer(csvfile, delimiter=self.delim)
+        #             for row in self.rest:
+        #                 row=[c.encode(self.encoding) for c in row]
+        #                 writer.writerow(row)
+        #     except:
+        #         tooltip(_("Could not open output file %s" % self.restFile),period=1500)
 
     def saveButtonPushed(self):
         """ What happens if save button is pushed:
         Show tooltip and save."""
-        save()
-        # tooltip
-        text=""
-        if self.addedFile: 
-            text+="Saved added "
-        if self.restFile:
-            text+="Saved rest"
-        if text=="":
-            text+="NO FILE TO SAVE"
-        tooltip(_(text), period=1500)
+        self.save()
+        # # tooltip
+        # text=""
+        # if self.addedFile: 
+        #     text+="Saved added "
+        # if self.restFile:
+        #     text+="Saved rest"
+        # if text=="":
+        #     text+="NO FILE TO SAVE"
+        # tooltip(_(text), period=1500)
 
     def show(self):
         if self.importFile:
@@ -245,44 +212,30 @@ class cbcImport():
     
     def last(self):
         """ Inserts last entry. """
-        if self.currentIdx<len(self.queue)-1:
-            self.currentIdx+=1
-        else:
-            tooltip(_("Already last card"), period=500)
-        self.currentIdx=len(self.queue)-1
+        self.data.go_last()
         self.insert()
     
     def next(self):
         """ Inserts next entry. """
-        if self.currentIdx<len(self.queue)-1:
-            self.currentIdx+=1
-        else:
-            tooltip(_("Already last card"), period=500)
+        self.data.go_next()
         self.insert()
     
     def previous(self):
         """ Inserts previous entry. """
-        if self.currentIdx>=1:
-            self.currentIdx-=1
-        else:
-            tooltip(_("Already first card"), period=500)
+        self.data.go_previous()
         self.insert()
     
     def first(self):
         """ Inserts first entry. """
-        self.currentIdx=0
+        self.data.go_first()
         self.insert()
     
     def reverse(self):
         """ Reverses the ordering of the queue. """
-        if len(self.queue)==0:
+        if self.data.is_queue_empty():
             tooltip(_("Queue is empty!"),period=1000)
             return  
         self.data.reverse()
-        self.added.reverse()
-        self.dupe.reverse()
-        self.queue.reverse()
-        self.currentIdx=len(self.queue)-1-self.currentIdx
         self.updateStatus()
         
     # Running Hooks and similar
@@ -294,40 +247,31 @@ class cbcImport():
         soon as 'editFocusLost' is called (normally triggered after manually 
         editing a field). Calling it directly saves us the trouble of clicking
         into the 'Expression' field and outside again to trigger this. """
-        changedFields=['Expression','Meaning']
+        changedFields = ['Expression','Meaning']
         for field in changedFields:
-            fieldIdx=mw.col.models.field_names(self.e.note.model()).index(field)
+            fieldIdx = mw.col.models.field_names(self.e.note.model()).index(field)
             runHook('editFocusLost',False,self.e.note,fieldIdx)
         self.e.loadNote()
     
     def cardAdded(self, obj, note):
         """ This function gets called once a card is added and
         is needed to update self.added (list of added cards) """
-        self.lastAdded=False
+        self.lastAdded = False
         # save user input
         # this seems to be neccessary
         note.flush()
-        if len(self.queue)>self.currentIdx:
+        if self.data.is_go_next_possible():
             # current queue Element Expression
-            current=self.queue[self.currentIdx]
-            exp=note['Expression']
+            current = self.data.get_current()
+            exp = note['Expression']
             # we have to check if the we really are adding an element
             # of the queue. Problem is that we want to allow some tolerance
-            isque=False
-            if len(exp)>=3: 
-                if exp in current[0]:
-                    isque=True
-            else:
-                print(exp,current[0],exp==current[0].split(self.delim)[-1])
-                if exp==current[0].split(self.delim)[-1]:
-                    isque=True
-            if isque:
-                self.lastAdded=True
-                self.added.append(current)
-                # FIXME: What if other mode?
-                # dupes are not in self.rest
-                # also remove from queue!
-                self.rest.remove(current)
+            
+            if self.data.is_in_queue(exp):
+                self.lastAdded = True
+                current.is_added = True
+                self.data.set_current(current)
+
         self.updateStatus()
         
     def myTooltip(self,*args):
@@ -411,7 +355,7 @@ class cbcImport():
     def updateButtonStates(self):
         for buttonName in self.buttons:
             if buttonName.startswith('cbcQ_'):
-                self.buttons[buttonName].setEnabled(len(self.queue)>0)
+                self.buttons[buttonName].setEnabled(not self.is_queue_empty())
 
     def updateStatus(self):
         """ Updates button texts e.g. to display 
@@ -426,26 +370,22 @@ class cbcImport():
         text='<b>In:</b> "%s" ' % short(self.importFile)
         text+='<b>OutA:</b> "%s" ' % short(self.addedFile)
         text+='<b>OutR:</b> "%s" | ' % short(self.restFile)
-        text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.currentIdx+1,len(self.queue),len(self.added),len(self.dupe))
+        text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),lenself.data.len_added(),self.data.len_dupe())
         text+="<b>LA:</b> %s" % str(self.lastAdded)
         self.status.setText(text)   
 
 
 
 
-# myImport=cbcImport()
+myImport=cbcImport()
 
-# # generate new hooks
-# AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
-# AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
-# AddCards.addCards=wrap(AddCards.addCards,lambda AddCardsObj: runHook("tooltip",AddCardsObj))
+# generate new hooks
+AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
+AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
+AddCards.addCards=wrap(AddCards.addCards,lambda AddCardsObj: runHook("tooltip",AddCardsObj))
 
-# # add functions to those hooks
-# addHook("addEditorSetup",myImport.setupMyMenu)
-# addHook("unloadProfile",myImport.save)
-# addHook("tooltip",myImport.myTooltip)
-# addHook("addHistory",myImport.cardAdded)
-
-ds = DataSet()
-ds.load("tan.csv")
-print(ds._data)
+# add functions to those hooks
+addHook("addEditorSetup",myImport.setupMyMenu)
+addHook("unloadProfile",myImport.save)
+addHook("tooltip",myImport.myTooltip)
+addHook("addHistory",myImport.cardAdded)
