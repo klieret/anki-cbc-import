@@ -92,7 +92,8 @@ class cbcImport():
         """ Updates note $note with data from $current. """
         
         # ----------- BEGIN CONFIG -----------
-        self.delim=unicode('・',self.encoding)
+        self.delim = unicode('・',self.encoding)
+        
         # TODO splitting as separate method
         def enum(string):
             split=string.split('/')
@@ -104,8 +105,9 @@ class cbcImport():
                 for i in range(n):
                     out+=str(i+1)+". "+split[i]+'<br>'
             return out.strip()
-        note['Expression']=current[0].split(self.delim)[-1] # todo: do we really want that?
-        note['Meaning']=enum(current[2])
+        
+        note['Expression']=current.fields['Expression']
+        note['Meaning']=enum(current.fields['Meaning'])
         # ----------- END CONFIG -----------
         
         return note
@@ -117,12 +119,12 @@ class cbcImport():
         if self.data.is_queue_empty():
             tooltip(_("Queue is empty!"),period=1000)
             return
-        elif self.data.is_last():
+        elif self.data.is_go_next_possible():
             tooltip(_("Was last entry!"),period=1000)
         
         self.clean()    # remove All field entries
         
-        current = self.queue[self.currentIdx] #source
+        current = self.data.get_current() #source
         note = copy.copy(self.e.note)         #target
         
         self.e.setNote(self.wrap(note,current))
@@ -132,7 +134,7 @@ class cbcImport():
     
     def clean(self):
         """ Resets all fields. """
-        for field in mw.col.models.field_names(self.e.note.model()):
+        for field in mw.col.models.fieldNames(self.e.note.model()):
             self.e.note[field] = ''
         self.e.note.flush()
 
@@ -143,7 +145,7 @@ class cbcImport():
         filters = "csv Files (*.csv);;All Files (*)"
         import_file = QFileDialog.getSaveFileName(None, "Pick a file to import.", 
             self.defaultDir, filters, options=QFileDialog.DontConfirmOverwrite)
-        if importFile:
+        if import_file:
             self.importFile = import_file
         self.updateStatus()
     
@@ -160,12 +162,14 @@ class cbcImport():
         
         # status
         self.updateStatus()
-        tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), len(self.data.len_dupe()))), period=1500)
+        tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
     
 
     def save(self):
         """ Saves self.added and self.rest to the resp. files """
         pass
+
+        # todo
 
         # if self.addedFile and (self.createEmptyFiles or len(self.added)>0):
         #     try:
@@ -249,7 +253,7 @@ class cbcImport():
         into the 'Expression' field and outside again to trigger this. """
         changedFields = ['Expression','Meaning']
         for field in changedFields:
-            fieldIdx = mw.col.models.field_names(self.e.note.model()).index(field)
+            fieldIdx = mw.col.models.fieldNames(self.e.note.model()).index(field)
             runHook('editFocusLost',False,self.e.note,fieldIdx)
         self.e.loadNote()
     
@@ -370,7 +374,7 @@ class cbcImport():
         text='<b>In:</b> "%s" ' % short(self.importFile)
         text+='<b>OutA:</b> "%s" ' % short(self.addedFile)
         text+='<b>OutR:</b> "%s" | ' % short(self.restFile)
-        text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),lenself.data.len_added(),self.data.len_dupe())
+        text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),self.data.len_added(),self.data.len_dupe())
         text+="<b>LA:</b> %s" % str(self.lastAdded)
         self.status.setText(text)   
 

@@ -20,14 +20,20 @@ class DataElement(object):
         # {"fieldname":"value", ...}
         self.fields = {}
 
-        self.is_dupe = False
-        self.is_added = False
+        self.dupe = False
+        self.added = False
+
+    def is_dupe(self):
+        return self.dupe
+
+    def is_added(self):
+        return self.added
 
     def is_in_queue(self):
         """ Should this element pop up in the current queue 
         of vocabulary that we want to add? """
 
-        return not self.is_dupe and not self.is_added
+        return not self.is_dupe() and not self.is_added()
 
     def set_fields_hook(self):
         """ Should be run after changes to self.fields were
@@ -73,7 +79,7 @@ class DataSet(object):
             reader = csv.reader(csvfile, delimiter='\t')
             
             # must match Anki fieldnames. If you want to ignore a field, just set it to ""
-            field_names = ["Expression", "Kana", "Translation", None]
+            field_names = ["Expression", "Kana", "Meaning", None]
     
             for row in reader:
                 fields = [c.decode('utf8') for c in row]
