@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from aqt import mw # main window
-from aqt.editor import Editor
-from aqt.addcards import AddCards # addCards dialog
-from aqt.utils import shortcut, tooltip, getSaveFile
-from aqt.qt import *
+# from aqt import mw # main window
+# from aqt.editor import Editor
+# from aqt.addcards import AddCards # addCards dialog
+# from aqt.utils import shortcut, tooltip, getSaveFile
+# from aqt.qt import *
 
-from anki.hooks import addHook, runHook, wrap
+# from anki.hooks import addHook, runHook, wrap
 
-from ignore_dupes import expressionDupe
+# from ignore_dupes import expressionDupe
 
-import csv
-import os.path
-import glob
-import copy
-import os
+# import csv
+# import os.path
+# import glob
+# import copy
+# import os
 
 
 # TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
@@ -45,21 +45,39 @@ class dataElement(obejct):
 class dataSet(object):
 	def __init__(self):
 
-		dataElements = []
+		# should be of type 
+		# "fieldname":"value"
+		self._data = {}
 
 		# which element are we looking at 
 		# right now
 		self._cursor = 0
 
 	def getCurrent(self):
-		return dataElements[self._cursor]
+		return self._data[self._cursor]
+
+	def updateFromFile(self, filename):
+		""" Loads input file to self._data. """
+		with open(filename,'r') as csvfile:
+			reader=csv.reader(csvfile, delimiter='\t'):
+			for row in reader:
+				element = dataElement()
+				
+				fields = [c.decode('utf8') for c in row]
+				fieldNames = ["Field 1", "Field 2", "..."]
+				
+				if not len(fields) == len(fieldNames):
+					raise ValueError, "#Fields != #fileNames"
+				for i in range(len(field)):
+					element.fields[fieldNames[i]] = fields[i] 
+				
+				self._data.append(element)
 
 	# Navigate with skipping.
 
 	def go(self, func, start = self._cursor):
 		""" Updates self._cursor. 
-		Starts with 
-		cursor = $start and repeatedly call cursor = fun(cursor).
+		Starts with cursor = $start and repeatedly call cursor = fun(cursor).
 		Once the element at cursor is an element that should be in 
 		the queue, we set self._cursor = cursor .
 		Returns True if self._cursor was changed, False otherwise. """
@@ -79,13 +97,13 @@ class dataSet(object):
 	def goNext(self):
 		""" Go to next queue element 
 		(i.e. sets self._cursor to the index of the next queue element)
-		Returns False if we are already at the end of all queue elements. """
+		Returns False if we are already at the last queue element. """
 		return self.go(lambda x: x+1)
 
 	def goPrevious(self):
 		""" Go to previous queue element 
 		(i.e. sets self._cursor to the index of the previous queue element)
-		Returns False if we are already at the first queue elements. """
+		Returns False if we are already at the first queue element. """
 
 	 	return self.go(lambda x: x-1)
 
@@ -93,12 +111,12 @@ class dataSet(object):
 		return self.go(lambda x: x+1, start = 0)
 		""" Go to first queue element 
 		(i.e. sets self._cursor to the index of the first queue element)
-		Returns False if we are already at the first queue elements. """
+		Returns False if we are already at the first queue element. """
 		
 	def goLast(self):
 	 	""" Go to last queue element 
 		(i.e. sets self._cursor to the index of the last queue element)
-		Returns False if we are already at the end of all queue elements. """
+		Returns False if we are already at the last queue element. """
 		
 	 	return self.go(lambda x: x-1, start = len(self._cursor))
 
@@ -502,15 +520,17 @@ class cbcImport():
 		self.status.setText(text)	
 
 
-myImport=cbcImport()
 
-# generate new hooks
-AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
-AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
-AddCards.addCards=wrap(AddCards.addCards,lambda AddCardsObj: runHook("tooltip",AddCardsObj))
 
-# add functions to those hooks
-addHook("addEditorSetup",myImport.setupMyMenu)
-addHook("unloadProfile",myImport.save)
-addHook("tooltip",myImport.myTooltip)
-addHook("addHistory",myImport.cardAdded)
+# myImport=cbcImport()
+
+# # generate new hooks
+# AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
+# AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
+# AddCards.addCards=wrap(AddCards.addCards,lambda AddCardsObj: runHook("tooltip",AddCardsObj))
+
+# # add functions to those hooks
+# addHook("addEditorSetup",myImport.setupMyMenu)
+# addHook("unloadProfile",myImport.save)
+# addHook("tooltip",myImport.myTooltip)
+# addHook("addHistory",myImport.cardAdded)
