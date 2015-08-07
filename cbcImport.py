@@ -42,7 +42,7 @@ class dataElement(object):
 		self.isAdded = False
 
 	def isInQueue(self):
-		return not self.isDupe and not self.isAdded
+		return (not self.isDupe and not self.isAdded)
 
 	def setFieldsHook(self):
 		pass
@@ -61,15 +61,17 @@ class dataSet(object):
 
 	def load(self, filename):
 		""" Loads input file to self._data. """
+		# todo: configure this loading.
+
 		with open(filename,'r') as csvfile:
 			reader = csv.reader(csvfile, delimiter='\t')
+			
+			# must match Anki fieldnames. If you want to ignore a field, just set it to ""
+			fieldNames = ["Expression", "Kana", "Translation", None]
+	
 			for row in reader:
-				element = dataElement()
-				
 				fields = [c.decode('utf8') for c in row]
-
-				# must match Anki fieldnames. If you want to ignore a field, just set it to ""
-				fieldNames = ["Expression", "Kana", "Translation", ""]
+				element = dataElement()				
 				
 				if not len(fields) == len(fieldNames):
 					raise ValueError, "The number of supplied fieldNames (%d) doesn't match the number of fields in the file %s (%d)." % (len(fieldNames), filename, len(fields))
@@ -84,26 +86,30 @@ class dataSet(object):
 
 	def go(self, func, start = None):
 		""" Updates self._cursor. 
-		Starts with cursor = $start (default: self.cursor)
+		Starts with cursor = $start (default: func(self.cursor)
 		and repeatedly call cursor = fun(cursor).
 		Once the element at cursor is an element that should be in 
 		the queue, we set self._cursor = cursor.
 		Returns True if self._cursor was changed, False otherwise. """
 	 	
-		if not start:
-			start = self._cursor
-
-	 	cursor = start
 		oldCursor = self._cursor
-		cursor = func(cursor)	
 		
-		while cursor in range(len(dataElements)):
-			if dataElements[cursor].isInQueue:
-				self._cusor = cursor
+		if start == None:
+			# do NOT use "if not start", because start = 0 gets 
+			# also evaluated as False.
+			start = func(self._cursor)
+	 	
+	 	cursor = start
+		
+		while cursor in range(len(self._data)):
+			print(cursor)
+			if self._data[cursor].isInQueue:
+				self._cursor = cursor
+				print("update")
 				break 
-			cursor = func(cursor)	
+			cursor = func(cursor)
 		
-		return oldCursor == self._cursor
+		return oldCursor != self._cursor
 
 	def goNext(self):
 		""" Go to next queue element 
@@ -119,17 +125,18 @@ class dataSet(object):
 	 	return self.go(lambda x: x-1)
 
 	def goFirst(self):
-		return self.go(lambda x: x+1, start = 0)
 		""" Go to first queue element 
 		(i.e. sets self._cursor to the index of the first queue element)
 		Returns False if we are already at the first queue element. """
+		
+		return self.go(lambda x: x+1, start = 0)
 		
 	def goLast(self):
 	 	""" Go to last queue element 
 		(i.e. sets self._cursor to the index of the last queue element)
 		Returns False if we are already at the last queue element. """
 		
-	 	return self.go(lambda x: x-1, start = len(self._cursor))
+	 	return self.go(lambda x: x-1, start = len(self._data)-1)
 
 
 class cbcImport():
