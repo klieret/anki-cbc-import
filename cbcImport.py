@@ -30,6 +30,62 @@ import os
 # 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
 # 3. DON'T USE SPACES TO INDENT IN THIS FILE.
 
+class dataElement(obejct):
+	def __init__(self):
+		# The fields that are to be synchronized with 
+		# the anki note
+		self.fields = {}
+
+		self.isDupe = False
+		self.isAdded = False
+
+	def isInQueue(self):
+		return not self.isDupe and not self.isAdded
+
+class dataSet(object):
+	def __init__(self):
+
+		dataElements = []
+
+		# which element are we looking at 
+		# right now
+		self._cursor = 0
+
+	def getCurrent(self):
+		return dataElements[self._cursor]
+
+	# Navigate with skipping.
+
+	def go(self, func, start = self._cursor):
+		""" """
+	 	i = start
+		oldCursor = self._cursor
+		while True:
+			# raise or increase the index $i:
+			i = func(i)	
+			# abort if $i is out of range
+			if not (i in range(len(dataElements))):
+				break
+			# if we hit a queue element, update self._cursor
+			if dataElements[o].isInQueue:
+				self._cusor = i
+				break 
+		# return if we have changed something.
+		return oldCursor == self._cursor
+
+	def goNext(self):
+		return self.go(lambda x: x+1)
+
+	def goPrevious(self):
+	 	return self.go(lambda x: x-1)
+
+	def goFirst(self):
+		return self.go(lambda x: x+1, start = 0)
+
+	def goLast(self):
+	 	return self.go(lambda x: x-1, start = len(self._cursor))
+
+
 class cbcImport():
 	def __init__(self):
 		""" init and basic configuration """
