@@ -18,7 +18,7 @@ import copy
 import os
 
 
-# TODO: FIELDS MORE CLaEAR (MULTIPLE USED EXPRESSION ETC.)
+# TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
 # TODO: neue Base
 # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...) 
 # TODO: keine Checks etc., wenn noch nicht mal mehr Datei geladen.
@@ -108,7 +108,7 @@ class cbcImport():
 				for i in range(n):
 					out+=str(i+1)+". "+split[i]+'<br>'
 			return out.strip()
-		note['Expression']=current[0].split(self.delim)[-1]
+		note['Expression']=current[0].split(self.delim)[-1] # todo: do we really want that?
 		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
 		
@@ -177,6 +177,7 @@ class cbcImport():
 		# status
 		self.updateStatus()
 		tooltip(_("All: %d (Dupe: %d)" % (len(self.data),len(self.dupe))), period=1500)
+	
 	def fullUpdateDupes(self):
 		""" If self.careForDupes==True: Finds all duplicates from self.data and
 		writes them to self.dupe. Else: do nothing. """
@@ -187,6 +188,7 @@ class cbcImport():
 			exp=item[0].split(delim)[-1]
 			if expressionDupe(self.mw.col,exp):
 				self.dupe.append(item)
+	
 	def fullUpdateRest(self):
 		""" Generates self.rest from self.data by substract self.dupe and self.added. """
 		self.rest=[]
@@ -238,6 +240,7 @@ class cbcImport():
 	
 	# Controlling self.Idx
 	# -----------------------------
+	
 	def last(self):
 		""" Inserts last entry. """
 		if self.currentIdx<len(self.queue)-1:
@@ -246,6 +249,7 @@ class cbcImport():
 			tooltip(_("Already last card"), period=500)
 		self.currentIdx=len(self.queue)-1
 		self.insert()
+	
 	def next(self):
 		""" Inserts next entry. """
 		if self.currentIdx<len(self.queue)-1:
@@ -253,6 +257,7 @@ class cbcImport():
 		else:
 			tooltip(_("Already last card"), period=500)
 		self.insert()
+	
 	def previous(self):
 		""" Inserts previous entry. """
 		if self.currentIdx>=1:
@@ -260,10 +265,12 @@ class cbcImport():
 		else:
 			tooltip(_("Already first card"), period=500)
 		self.insert()
+	
 	def first(self):
 		""" Inserts first entry. """
 		self.currentIdx=0
 		self.insert()
+	
 	def reverse(self):
 		""" Reverses the ordering of the queue. """
 		if len(self.queue)==0:
