@@ -11,7 +11,7 @@
 
 # from ignore_dupes import expressionDupe
 
-# import csv
+import csv
 # import os.path
 # import glob
 # import copy
@@ -30,10 +30,12 @@
 # 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
 # 3. DON'T USE SPACES TO INDENT IN THIS FILE.
 
-class dataElement(obejct):
+class dataElement(object):
 	def __init__(self):
 		# The fields that are to be synchronized with 
 		# the anki note
+		# should be of type 
+		# "fieldname":"value"
 		self.fields = {}
 
 		self.isDupe = False
@@ -42,12 +44,13 @@ class dataElement(obejct):
 	def isInQueue(self):
 		return not self.isDupe and not self.isAdded
 
+	def setFieldsHook(self):
+		pass
+
 class dataSet(object):
 	def __init__(self):
 
-		# should be of type 
-		# "fieldname":"value"
-		self._data = {}
+		self._data = []
 
 		# which element are we looking at 
 		# right now
@@ -56,32 +59,40 @@ class dataSet(object):
 	def getCurrent(self):
 		return self._data[self._cursor]
 
-	def updateFromFile(self, filename):
+	def load(self, filename):
 		""" Loads input file to self._data. """
 		with open(filename,'r') as csvfile:
-			reader=csv.reader(csvfile, delimiter='\t'):
+			reader = csv.reader(csvfile, delimiter='\t')
 			for row in reader:
 				element = dataElement()
 				
 				fields = [c.decode('utf8') for c in row]
-				fieldNames = ["Field 1", "Field 2", "..."]
+
+				# must match Anki fieldnames. If you want to ignore a field, just set it to ""
+				fieldNames = ["Expression", "Kana", "Translation", ""]
 				
 				if not len(fields) == len(fieldNames):
-					raise ValueError, "#Fields != #fileNames"
-				for i in range(len(field)):
+					raise ValueError, "The number of supplied fieldNames (%d) doesn't match the number of fields in the file %s (%d)." % (len(fieldNames), filename, len(fields))
+				
+				for i in range(len(fields)):
 					element.fields[fieldNames[i]] = fields[i] 
 				
+				element.setFieldsHook()
 				self._data.append(element)
 
 	# Navigate with skipping.
 
-	def go(self, func, start = self._cursor):
+	def go(self, func, start = None):
 		""" Updates self._cursor. 
-		Starts with cursor = $start and repeatedly call cursor = fun(cursor).
+		Starts with cursor = $start (default: self.cursor)
+		and repeatedly call cursor = fun(cursor).
 		Once the element at cursor is an element that should be in 
-		the queue, we set self._cursor = cursor .
+		the queue, we set self._cursor = cursor.
 		Returns True if self._cursor was changed, False otherwise. """
 	 	
+		if not start:
+			start = self._cursor
+
 	 	cursor = start
 		oldCursor = self._cursor
 		cursor = func(cursor)	
@@ -534,3 +545,7 @@ class cbcImport():
 # addHook("unloadProfile",myImport.save)
 # addHook("tooltip",myImport.myTooltip)
 # addHook("addHistory",myImport.cardAdded)
+
+ds = dataSet()
+ds.load("tan.csv")
+print(ds._data)
