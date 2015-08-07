@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# from aqt import mw # main window
-# from aqt.editor import Editor
-# from aqt.addcards import AddCards # addCards dialog
-# from aqt.utils import shortcut, tooltip, getSaveFile
-# from aqt.qt import *
+from aqt import mw # main window
+from aqt.editor import Editor
+from aqt.addcards import AddCards # addCards dialog
+from aqt.utils import shortcut, tooltip, getSaveFile
+from aqt.qt import *
 
-# from anki.hooks import addHook, runHook, wrap
+from anki.hooks import addHook, runHook, wrap
 
-# from ignore_dupes import expressionDupe
+from ignore_dupes import expressionDupe
 
 import csv
-# import os.path
-# import glob
-# import copy
-# import os
+import os.path
+import glob
+import copy
+import os
 
 
 # TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
@@ -30,7 +30,7 @@ import csv
 # 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
 # 3. DON'T USE SPACES TO INDENT IN THIS FILE.
 
-class dataElement(object):
+class DataElement(object):
     def __init__(self):
         # The fields that are to be synchronized with 
         # the anki note
@@ -42,13 +42,14 @@ class dataElement(object):
         self.is_added = False
 
     def is_in_queue(self):
-        return (not self.is_dupe and not self.is_added)
+        return not self.is_dupe and not self.is_added
 
     def set_fields_hook(self):
         pass
 
+
 class DataSet(object):
-    """ Collects dataElements instances. """
+    """ Collects DataElements instances. """
 
     def __init__(self):
         self._data = []
@@ -72,7 +73,7 @@ class DataSet(object):
     
             for row in reader:
                 fields = [c.decode('utf8') for c in row]
-                element = dataElement()             
+                element = DataElement()             
                 
                 if not len(fields) == len(field_names):
                     raise ValueError, "The number of supplied field_names (%d) doesn't match the number of fields in the file %s (%d)." % (len(field_names), filename, len(fields))
@@ -93,7 +94,7 @@ class DataSet(object):
         the queue, we set self._cursor = cursor.
         Returns True if self._cursor was changed, False otherwise. """
         
-        oldCursor = self._cursor
+        old_cursor = self._cursor
         
         if start == None:
             # do NOT use "if not start", because start = 0 gets 
@@ -110,34 +111,34 @@ class DataSet(object):
                 break 
             cursor = func(cursor)
         
-        return oldCursor != self._cursor
+        return old_cursor != self._cursor
 
-    def goNext(self):
+    def go_next(self):
         """ Go to next queue element 
         (i.e. sets self._cursor to the index of the next queue element)
         Returns False if we are already at the last queue element. """
         return self.go(lambda x: x+1)
 
-    def goPrevious(self):
+    def go_previous(self):
         """ Go to previous queue element 
         (i.e. sets self._cursor to the index of the previous queue element)
         Returns False if we are already at the first queue element. """
 
         return self.go(lambda x: x-1)
 
-    def goFirst(self):
+    def go_first(self):
         """ Go to first queue element 
         (i.e. sets self._cursor to the index of the first queue element)
         Returns False if we are already at the first queue element. """
         
-        return self.go(lambda x: x+1, start = 0)
+        return self.go(lambda x: x+1, start=0)
         
-    def goLast(self):
+    def go_last(self):
         """ Go to last queue element 
         (i.e. sets self._cursor to the index of the last queue element)
         Returns False if we are already at the last queue element. """
         
-        return self.go(lambda x: x-1, start = len(self._data)-1)
+        return self.go(lambda x: x-1, start=len(self._data)-1)
 
 
 class cbcImport():
