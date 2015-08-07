@@ -57,32 +57,49 @@ class dataSet(object):
 	# Navigate with skipping.
 
 	def go(self, func, start = self._cursor):
-		""" """
-	 	i = start
+		""" Updates self._cursor. 
+		Starts with 
+		cursor = $start and repeatedly call cursor = fun(cursor).
+		Once the element at cursor is an element that should be in 
+		the queue, we set self._cursor = cursor .
+		Returns True if self._cursor was changed, False otherwise. """
+	 	
+	 	cursor = start
 		oldCursor = self._cursor
-		while True:
-			# raise or increase the index $i:
-			i = func(i)	
-			# abort if $i is out of range
-			if not (i in range(len(dataElements))):
-				break
-			# if we hit a queue element, update self._cursor
-			if dataElements[o].isInQueue:
-				self._cusor = i
+		cursor = func(cursor)	
+		
+		while cursor in range(len(dataElements)):
+			if dataElements[cursor].isInQueue:
+				self._cusor = cursor
 				break 
-		# return if we have changed something.
+			cursor = func(cursor)	
+		
 		return oldCursor == self._cursor
 
 	def goNext(self):
+		""" Go to next queue element 
+		(i.e. sets self._cursor to the index of the next queue element)
+		Returns False if we are already at the end of all queue elements. """
 		return self.go(lambda x: x+1)
 
 	def goPrevious(self):
+		""" Go to previous queue element 
+		(i.e. sets self._cursor to the index of the previous queue element)
+		Returns False if we are already at the first queue elements. """
+
 	 	return self.go(lambda x: x-1)
 
 	def goFirst(self):
 		return self.go(lambda x: x+1, start = 0)
-
+		""" Go to first queue element 
+		(i.e. sets self._cursor to the index of the first queue element)
+		Returns False if we are already at the first queue elements. """
+		
 	def goLast(self):
+	 	""" Go to last queue element 
+		(i.e. sets self._cursor to the index of the last queue element)
+		Returns False if we are already at the end of all queue elements. """
+		
 	 	return self.go(lambda x: x-1, start = len(self._cursor))
 
 
