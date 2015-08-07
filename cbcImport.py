@@ -154,6 +154,9 @@ class cbcImport():
 	def load(self):
 		""" Loads input file to self.data. """
 		# initialize self.data
+		self.currentIdx=0 
+		self.added=[]
+		self.rest=[]
 		self.data=[]
 		self.queue=[]
 		self.dupe=[]
@@ -306,8 +309,8 @@ class cbcImport():
 				if exp in current[0]:
 					isque=True
 			else:
-				print(exp,current[0],exp==current[0].split(self.delim)[0])
-				if exp==current[0]:
+				print(exp,current[0],exp==current[0].split(self.delim)[-1])
+				if exp==current[0].split(self.delim)[-1]:
 					isque=True
 			if isque:
 				self.lastAdded=True
