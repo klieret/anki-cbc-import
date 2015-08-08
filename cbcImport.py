@@ -96,18 +96,18 @@ class cbcImport():
         
         # TODO splitting as separate method
         def enum(string):
-            split=string.split('/')
-            out=""
-            n=len(split)
-            if n==1:
+            split = string.split('/')
+            out = ""
+            n = len(split)
+            if n == 1:
                 return string
             else:
                 for i in range(n):
-                    out+=str(i+1)+". "+split[i]+'<br>'
+                    out += str(i+1)+". "+split[i]+'<br>'
             return out.strip()
         
-        note['Expression']=current.fields['Expression']
-        note['Meaning']=enum(current.fields['Meaning'])
+        note['Expression'] = current.fields['Expression']
+        note['Meaning'] = enum(current.fields['Meaning'])
         # ----------- END CONFIG -----------
         
         return note
@@ -367,29 +367,29 @@ class cbcImport():
         def short(string):
             if not string:
                 return "None"
-            mlen=10
+            mlen = 10
             if len(string)<=mlen:
                 return string
             return "..."+string[-mlen:]
-        text='<b>In:</b> "%s" ' % short(self.importFile)
-        text+='<b>OutA:</b> "%s" ' % short(self.addedFile)
-        text+='<b>OutR:</b> "%s" | ' % short(self.restFile)
-        text+="<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),self.data.len_added(),self.data.len_dupe())
-        text+="<b>LA:</b> %s" % str(self.lastAdded)
+        text = '<b>In:</b> "%s" ' % short(self.importFile)
+        text += '<b>OutA:</b> "%s" ' % short(self.addedFile)
+        text += '<b>OutR:</b> "%s" | ' % short(self.restFile)
+        text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),self.data.len_added(),self.data.len_dupe())
+        text += "<b>LA:</b> %s" % str(self.lastAdded)
         self.status.setText(text)   
 
 
 
 
-myImport=cbcImport()
+myImport = cbcImport()
 
 # generate new hooks
-AddCards.addHistory=wrap(AddCards.addHistory,lambda *args: runHook("addHistory",*args))
-AddCards.setupEditor=wrap(AddCards.setupEditor,lambda AddCardsObj: runHook("addEditorSetup",AddCardsObj))
-AddCards.addCards=wrap(AddCards.addCards,lambda AddCardsObj: runHook("tooltip",AddCardsObj))
+AddCards.addHistory = wrap(AddCards.addHistory, lambda *args: runHook("addHistory", *args))
+AddCards.setupEditor = wrap(AddCards.setupEditor, lambda AddCardsObj: runHook("addEditorSetup", AddCardsObj))
+AddCards.addCards = wrap(AddCards.addCards, lambda AddCardsObj: runHook("tooltip", AddCardsObj))
 
 # add functions to those hooks
-addHook("addEditorSetup",myImport.setupMyMenu)
-addHook("unloadProfile",myImport.save)
-addHook("tooltip",myImport.myTooltip)
-addHook("addHistory",myImport.cardAdded)
+addHook("addEditorSetup", myImport.setupMyMenu)
+addHook("unloadProfile", myImport.save)
+addHook("tooltip", myImport.myTooltip)
+addHook("addHistory", myImport.cardAdded)
