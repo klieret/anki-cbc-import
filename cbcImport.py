@@ -108,7 +108,12 @@ class cbcImport():
 				for i in range(n):
 					out+=str(i+1)+". "+split[i]+'<br>'
 			return out.strip()
-		note['Expression']=current[0].split(self.delim)[-1] # todo: do we really want that?
+		expression = current[0].split(self.delim)[-1].strip() # todo: do we really want that?
+		if not expression:
+			# if word doesn't contain any kanji, then the expression field will be empty and 
+			# you have to take the kana field instead!
+			expression = current[1]
+		note['Expression']= expression
 		note['Meaning']=enum(current[2])
 		# ----------- END CONFIG -----------
 		
