@@ -1,5 +1,11 @@
 #!/usr/bin/env python
+
+""" cbcImport -- and interface to add notes to Anki on a 
+case by case basis. """
+
 # -*- coding: utf-8 -*-
+
+#pylint: disable-all
 
 from aqt import mw # main window
 from aqt.editor import Editor
@@ -20,6 +26,8 @@ import os
 from data_classes import *
 
 
+# todo: duplicates!
+
 # TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
 # TODO: neue Base
 # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...) 
@@ -37,8 +45,7 @@ from data_classes import *
 class cbcImport():
     def __init__(self):
         """ init and basic configuration """
-        # ----------- BEGIN CONFIG -----------
-        
+        # ----------- BEGIN CONFIG -----------   
         # file to import (change the "..." part)
         #self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
         #self.importFile=os.path.expanduser('~/Desktop/rest.csv')
@@ -71,7 +78,7 @@ class cbcImport():
         #self.addedFile=importFileName+"_added"+importFileExt
         #self.restFile=importFileName+"_rest"+importFileExt
         
-        self.careForDupes  =True # Should dupes be treated differently?
+        self.careForDupes = True # Should dupes be treated differently?
         self.createEmptyFiles = False # Should export files created even if data empty?
         self.defaultEditor = "leafpad "   # Command to run default editor 
                                         # (include space or switch)
@@ -92,7 +99,7 @@ class cbcImport():
         """ Updates note $note with data from $current. """
         
         # ----------- BEGIN CONFIG -----------
-        self.delim = unicode('・',self.encoding)
+        self.delim = unicode('・', self.encoding)
         
         # TODO splitting as separate method
         def enum(string):
@@ -127,7 +134,7 @@ class cbcImport():
         current = self.data.get_current() #source
         note = copy.copy(self.e.note)         #target
         
-        self.e.setNote(self.wrap(note,current))
+        self.e.setNote(self.wrap(note, current))
         
         self.runHooks()
         self.updateStatus()
@@ -206,6 +213,7 @@ class cbcImport():
         # tooltip(_(text), period=1500)
 
     def show(self):
+        """ Opens input file in an external editor. """
         if self.importFile:
             os.system("%s %s &" % (self.defaultEditor, self.importFile))
         else:
@@ -289,12 +297,12 @@ class cbcImport():
     # Setup Menu
     # ----------------------------------------
 
-    def setupMyMenu(self,AddCardsObj):
+    def setupMyMenu(self, AddCardsObj):
         """ Creates the line of buttons etc. to control this addon. """
-        self.e=AddCardsObj.editor
-        self.mw=AddCardsObj.mw
+        self.e = AddCardsObj.editor
+        self.mw = AddCardsObj.mw
         # adapted from from /usr/share/anki/aqt/editor.py Lines 350
-        self.newIconsBox=QHBoxLayout()
+        self.newIconsBox = QHBoxLayout()
         if not isMac:
             self.newIconsBox.setMargin(6)
             self.newIconsBox.setSpacing(0)
@@ -316,7 +324,7 @@ class cbcImport():
         self.addMyButton("cbcQ_Last", self.last, text=">>", tip="Fill in last entry", size="30x50" , )
         # self.updateButtonStates() # maybe tooltips are better...
         # Status Field
-        self.statusIconsBox=QHBoxLayout()
+        self.statusIconsBox = QHBoxLayout()
         if not isMac:
             self.statusIconsBox.setMargin(6)
             self.statusIconsBox.setSpacing(0)
@@ -364,6 +372,7 @@ class cbcImport():
     def updateStatus(self):
         """ Updates button texts e.g. to display 
         number of remaining entries etc. """
+        
         def short(string):
             if not string:
                 return "None"
@@ -371,6 +380,7 @@ class cbcImport():
             if len(string)<=mlen:
                 return string
             return "..."+string[-mlen:]
+        
         text = '<b>In:</b> "%s" ' % short(self.importFile)
         text += '<b>OutA:</b> "%s" ' % short(self.addedFile)
         text += '<b>OutR:</b> "%s" | ' % short(self.restFile)
