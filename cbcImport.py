@@ -1,9 +1,9 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """ cbcImport -- and interface to add notes to Anki on a 
 case by case basis. """
 
-# -*- coding: utf-8 -*-
 
 #pylint: disable-all
 
@@ -24,7 +24,7 @@ import copy
 import os
 
 from data_classes import *
-
+from util import *
 
 # todo: duplicates!
 
@@ -166,11 +166,31 @@ class cbcImport():
             self.data.load(self.importFile)
         except:
             tooltip(_("Could not open input file %s" % self.importFile),period=1500)
-        
+        self.update_duplicates()
         # status
         self.updateStatus()
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
     
+    def update_duplicates(self):
+		""" If self.careForDupes==True: updates the duplicate status of all
+		entries in the data. Else: does nothing. 
+		Return value (bool): Was something changed?"""
+		if not self.careForDupes:
+			return False
+		changes = False
+		for entry in self.data:
+			# splitting with multiple delimeters:
+			delims = [',', ';', '・'.decode('utf-8')]
+			exps = entry.expression.split_multiple_delims(delims)
+			# if any of the partial expressions is a duplicate
+			# we mark the whole db entry as a duplicate!
+			for exp in exps:
+				if expressionDupe(self.mw.col, exp):
+					if not self.entry.is_dupe():
+						changes = True
+					self.entry.dupe = True
+					break 
+		return changes
 
     def save(self):
         """ Saves self.added and self.rest to the resp. files """

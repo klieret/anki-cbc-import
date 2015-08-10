@@ -1,10 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """ Defines two classes:
 - DataElement (contains all information about one word of vocabulary)
 - DataSet (a class that bundles all DataElements)"""
 
-# -*- coding: utf-8 -*-
 
 import csv
 
