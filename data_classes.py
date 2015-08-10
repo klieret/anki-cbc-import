@@ -73,6 +73,7 @@ class DataSet(object):
     def load(self, filename):
         """ Loads input file to self._data. """
         # todo: configure this loading.
+        # todo: should be easily overrideable
 
         with open(filename,'r') as csvfile:
             reader = csv.reader(csvfile, delimiter='\t')
@@ -94,8 +95,9 @@ class DataSet(object):
                 # if word doesn't contain any kanji, then the expression field will be empty 
                 # and you have to take the kana field instead!
                 # Maybe impolement that int element.set_fields_hook instead?
-                if not element.fields["Expression"]:
-                    element.fields["Expression"] = element.fields["Kana"]
+                if "Expression" in field_names and "Kana" in field_names:
+                    if not element.fields["Expression"]:
+                        element.fields["Expression"] = element.fields["Kana"]
 
                 element.set_fields_hook()
                 self._data.append(element)

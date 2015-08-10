@@ -29,7 +29,6 @@ from util import *
 # todo: duplicates!
 
 # TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
-# TODO: neue Base
 # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...) 
 # TODO: keine Checks etc., wenn noch nicht mal mehr Datei geladen.
 # TODO: Button zum entladen von Datein
@@ -178,17 +177,17 @@ class cbcImport():
 		if not self.careForDupes:
 			return False
 		changes = False
-		for entry in self.data:
+		for entry in self.data._data:
 			# splitting with multiple delimeters:
 			delims = [',', ';', '・'.decode('utf-8')]
-			exps = entry.expression.split_multiple_delims(delims)
+			exps = split_multiple_delims(entry.fields['Expression'], delims)
 			# if any of the partial expressions is a duplicate
 			# we mark the whole db entry as a duplicate!
 			for exp in exps:
 				if expressionDupe(self.mw.col, exp):
-					if not self.entry.is_dupe():
+					if not entry.is_dupe():
 						changes = True
-					self.entry.dupe = True
+					entry.dupe = True
 					break 
 		return changes
 
@@ -405,7 +404,8 @@ class cbcImport():
         text += '<b>OutA:</b> "%s" ' % short(self.addedFile)
         text += '<b>OutR:</b> "%s" | ' % short(self.restFile)
         text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),self.data.len_added(),self.data.len_dupe())
-        text += "<b>LA:</b> %s" % str(self.lastAdded)
+        text += "<b>LA:</b> %s" % format_bool_html(self.lastAdded) 
+        print(format_bool_html(self.lastAdded))
         self.status.setText(text)   
 
 
