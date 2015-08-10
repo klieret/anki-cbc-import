@@ -37,8 +37,7 @@ class DataElement(object):
 
     def set_fields_hook(self):
         """ Should be run after changes to self.fields were
-        made. """
-        
+        made. """              
         pass
 
 
@@ -82,15 +81,22 @@ class DataSet(object):
             field_names = ["Expression", "Kana", "Meaning", None]
     
             for row in reader:
-                fields = [c.decode('utf8') for c in row]
+                fields = [c.decode('utf8').strip() for c in row]
                 element = DataElement()             
                 
                 if not len(fields) == len(field_names):
                     raise ValueError, "The number of supplied field_names (%d) doesn't match the number of fields in the file %s (%d)." % (len(field_names), filename, len(fields))
                 
                 for i in range(len(fields)):
-                    element.fields[field_names[i]] = fields[i] 
-                
+                    element.fields[field_names[i]] = fields[i]   
+
+                # for tangorin:
+                # if word doesn't contain any kanji, then the expression field will be empty 
+                # and you have to take the kana field instead!
+                # Maybe impolement that int element.set_fields_hook instead?
+                if not element.fields["Expression"]:
+                    element.fields["Expression"] = element.fields["Kana"]
+
                 element.set_fields_hook()
                 self._data.append(element)
 
@@ -103,8 +109,6 @@ class DataSet(object):
                 i += 1
         return i
 
-
-
     def len_all(self):
         return self.count_data(lambda e: True)
 
@@ -116,8 +120,6 @@ class DataSet(object):
         
     def len_queue(self):
         return self.count_data(lambda e: e.is_in_queue())
-
-
 
     # Navigate with skipping.
 
