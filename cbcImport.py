@@ -121,7 +121,7 @@ class cbcImport():
             return out.strip()
         
         note['Expression'] = current.get_expression()
-        note['Meaning'] = enum(current.get_fields('Meaning'))
+        note['Meaning'] = enum(current.get_field('Meaning'))
         # ----------- END CONFIG -----------
         
         return note
@@ -198,7 +198,7 @@ class cbcImport():
 				if expressionDupe(self.mw.col, exp):
 					if not entry.is_dupe():
 						changes = True
-					entry.dupe = True
+					entry.set_dupe(True)
 					break 
 		return changes
 

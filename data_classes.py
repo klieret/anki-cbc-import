@@ -28,8 +28,8 @@ class DataElement(object):
         # {"fieldname":"value", ...}
         self._fields = {}
 
-        self.dupe = False
-        self.added = False
+        self._dupe = False
+        self._added = False
 
     def get_expression(self):
         return self._fields["Expression"]
@@ -44,10 +44,16 @@ class DataElement(object):
         self._fields[key] = value
 
     def is_dupe(self):
-        return self.dupe
+        return self._dupe
+
+    def set_dupe(self, bool):
+        self._dupe = bool
 
     def is_added(self):
-        return self.added
+        return self._added
+
+    def set_added(self, bool):
+        self._added = bool
 
     def is_in_queue(self):
         """ Should this element pop up in the current queue 
