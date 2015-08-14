@@ -132,11 +132,22 @@ class DataSet(object):
     # Statistics
 
     def count_data(self, boolean):
+        """ Count all data etnries with boolean(entry) == True """
         i = 0
         for entry in self._data:
             if boolean(entry):
                 i += 1
         return i
+
+        # Return lists
+
+    def get(self, boolean):
+        """ Returns list with all duplicates. """
+        ret = []
+        for entry in self._data:
+            if boolean(entry):
+                ret.append(entry)
+        return ret
 
     def len_all(self):
         return self.count_data(lambda e: True)
@@ -149,6 +160,20 @@ class DataSet(object):
         
     def len_queue(self):
         return self.count_data(lambda e: e.is_in_queue())
+
+
+    def get_all(self):
+        return self.get(lambda e: True)
+
+    def get_added(self):
+        return self.get(lambda e: e.is_added())
+
+    def get_dupe(self):
+        return self.get(lambda e: e.is_dupe())
+        
+    def get_queue(self):
+        return self.get(lambda e: e.is_in_queue())
+
 
     # Navigate with skipping.
 
@@ -173,9 +198,10 @@ class DataSet(object):
         cursor = start
         
         while cursor in range(len(self._data)):
-            print(cursor)
+            # print(self._data[cursor].fields['Expression'])
             if self._data[cursor].is_in_queue:
                 new_cursor = cursor
+                print("Is in queue. break.")
                 break 
             cursor = func(cursor)
         

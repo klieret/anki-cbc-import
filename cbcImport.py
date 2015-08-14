@@ -182,6 +182,7 @@ class cbcImport():
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
     
     def update_duplicates(self):
+<<<<<<< Updated upstream
 		""" If self.careForDupes==True: updates the duplicate status of all
 		entries in the data. Else: does nothing. 
 		Return value (bool): Was something changed?"""
@@ -201,6 +202,33 @@ class cbcImport():
 					entry.set_dupe(True)
 					break 
 		return changes
+=======
+        """ If self.careForDupes==True: updates the duplicate status of all
+        entries in the data. Else: does nothing. 
+        Return value (bool): Was something changed?"""
+        
+        if not self.careForDupes:
+            return False
+        
+        changes = False
+        
+        for i in range(len(self.data._data)):
+            entry = self.data._data[i]
+            delims = [',', ';', '・'.decode('utf-8')]
+            exps = split_multiple_delims(entry.fields['Expression'], delims)
+            # if any of the partial expressions is a duplicate
+            # we mark the whole db entry as a duplicate!
+            for exp in exps:
+                if expressionDupe(self.mw.col, exp):
+                    if not entry.is_dupe():
+                        changes = True
+                    entry.dupe = True
+                    # write back!
+                    self.data._data[i] = entry
+                    print("Marked Entry %s as duplicate." % entry.fields["Expression"])
+                    break
+        return changes
+>>>>>>> Stashed changes
 
     def save(self):
         """ Saves self.added and self.rest to the resp. files """
