@@ -5,6 +5,7 @@
 case by case basis. """
 
 
+
 #pylint: disable-all
 
 from aqt import mw # main window
@@ -25,6 +26,13 @@ import os
 
 from data_classes import *
 from util import *
+
+import logging
+logger = logging.getLogger("cbcImport:main")
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler("log.log")
+fh.setLevel(logging.DEBUG)
+logger.addHandler(fh)
 
 # todo: duplicates!
 
@@ -112,8 +120,8 @@ class cbcImport():
                     out += str(i+1)+". "+split[i]+'<br>'
             return out.strip()
         
-        note['Expression'] = current.fields['Expression']
-        note['Meaning'] = enum(current.fields['Meaning'])
+        note['Expression'] = current.get_expression()
+        note['Meaning'] = enum(current.get_fields('Meaning'))
         # ----------- END CONFIG -----------
         
         return note
@@ -162,9 +170,12 @@ class cbcImport():
         if not self.importFile:
             tooltip(_("No import file specified"),period=1500)
         try:
+            logger.debug("Loading. ")
             self.data.load(self.importFile)
-        except:
+        except ZeroDevisionError:
+            logger.debug("Loading exception!")
             tooltip(_("Could not open input file %s" % self.importFile),period=1500)
+
         self.update_duplicates()
         # status
         self.updateStatus()
@@ -180,7 +191,7 @@ class cbcImport():
 		for entry in self.data._data:
 			# splitting with multiple delimeters:
 			delims = [',', ';', '・'.decode('utf-8')]
-			exps = split_multiple_delims(entry.fields['Expression'], delims)
+			exps = split_multiple_delims(entry.get_expression(), delims)
 			# if any of the partial expressions is a duplicate
 			# we mark the whole db entry as a duplicate!
 			for exp in exps:
@@ -405,7 +416,6 @@ class cbcImport():
         text += '<b>OutR:</b> "%s" | ' % short(self.restFile)
         text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),self.data.len_added(),self.data.len_dupe())
         text += "<b>LA:</b> %s" % format_bool_html(self.lastAdded) 
-        print(format_bool_html(self.lastAdded))
         self.status.setText(text)   
 
 

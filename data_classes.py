@@ -6,7 +6,15 @@
 - DataSet (a class that bundles all DataElements)"""
 
 
+
 import csv
+
+import logging
+logger = logging.getLogger("cbcImport:data_classes")
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler("log.log")
+fh.setLevel(logging.DEBUG)
+logger.addHandler(fh)
 
 
 class DataElement(object):
@@ -18,10 +26,22 @@ class DataElement(object):
         # the anki note. 
         # Should be of type 
         # {"fieldname":"value", ...}
-        self.fields = {}
+        self._fields = {}
 
         self.dupe = False
         self.added = False
+
+    def get_expression(self):
+        return self._fields["Expression"]
+
+    def set_expression(self, value):
+        self._fields["Expression"] = value
+
+    def get_field(self, key):
+        return self._fields[key]
+
+    def set_field(self, key, value):
+        self._fields[key] = value
 
     def is_dupe(self):
         return self.dupe
@@ -36,7 +56,7 @@ class DataElement(object):
         return not self.is_dupe() and not self.is_added()
 
     def set_fields_hook(self):
-        """ Should be run after changes to self.fields were
+        """ Should be run after changes to self._fields were
         made. """              
         pass
 
@@ -74,7 +94,7 @@ class DataSet(object):
         """ Loads input file to self._data. """
         # todo: configure this loading.
         # todo: should be easily overrideable
-
+        logger.debug("Trying to load file '%s'." % filename)
         with open(filename,'r') as csvfile:
             reader = csv.reader(csvfile, delimiter='\t')
             
@@ -89,18 +109,19 @@ class DataSet(object):
                     raise ValueError, "The number of supplied field_names (%d) doesn't match the number of fields in the file %s (%d)." % (len(field_names), filename, len(fields))
                 
                 for i in range(len(fields)):
-                    element.fields[field_names[i]] = fields[i]   
+                    element.set_field(field_names[i], fields[i])   
 
                 # for tangorin:
                 # if word doesn't contain any kanji, then the expression field will be empty 
                 # and you have to take the kana field instead!
                 # Maybe impolement that int element.set_fields_hook instead?
                 if "Expression" in field_names and "Kana" in field_names:
-                    if not element.fields["Expression"]:
-                        element.fields["Expression"] = element.fields["Kana"]
+                    if not element.get_expression():
+                        element.set_expression(element.get_field("Kana"))
 
                 element.set_fields_hook()
                 self._data.append(element)
+                logger.debug("Appended data element.")
 
     # Statistics
 
