@@ -168,8 +168,8 @@ class cbcImport():
         try:
             logger.debug("Loading. ")
             self.data.load(self.importFile)
-        except ZeroDevisionError:
-            logger.debug("Loading exception!")
+        except Exception, e:
+            logger.debug("Loading exception: %s, %s", Exception, e)
             tooltip(_("Could not open input file %s" % self.importFile),period=1500)
 
         self.update_duplicates()
@@ -191,17 +191,20 @@ class cbcImport():
             entry = self.data._data[i]
             delims = [',', ';', '・'.decode('utf-8')]
             exps = split_multiple_delims(entry.get_expression(), delims)
+            print(entry.get_expression(), exps)
             # if any of the partial expressions is a duplicate
             # we mark the whole db entry as a duplicate!
             for exp in exps:
                 if expressionDupe(self.mw.col, exp):
                     if not entry.is_dupe():
                         changes = True
-                    entry.dupe = True
+                    entry.set_dupe(True)
                     # write back!
                     self.data._data[i] = entry
                     print("Marked Entry %s as duplicate." % entry.get_expression())
+                    print(self.data.len_dupe())
                     break
+        
         return changes
 
 

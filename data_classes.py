@@ -31,10 +31,10 @@ class DataElement(object):
     # ---------- Getters & Setters ---------------
 
     def get_expression(self):
-        self.get_field("Expression")
+        return self.get_field("Expression")
 
     def set_expression(self, value):
-        self.set_field("Expression", value)
+        return self.set_field("Expression", value)
 
     def get_field(self, key):
         return self._fields[key]
@@ -113,6 +113,7 @@ class DataSet(object):
     
             for row in reader:
                 fields = [c.decode('utf8').strip() for c in row]
+                print(fields)
                 element = DataElement()             
                 
                 if not len(fields) == len(field_names):
@@ -131,6 +132,7 @@ class DataSet(object):
 
                 element.set_fields_hook()
                 self._data.append(element)
+                print("appended")
 
     # ----------- Statistics --------------
 
@@ -268,19 +270,19 @@ class DataSet(object):
     def is_queue_empty(self):
         return self.len_queue() == 0
 
-    def is_in_queue(self):
+    def is_in_queue(self, exp):
         """ """
         # todo: make real thing
-        return True
-
-        # isque=False
-        # if len(exp)>=3: 
-        #     if exp in current.fields['Expression']:
-        #         isque=True
-        # else:
-        #     print(exp,current[0],exp==current[0].split(self.delim)[-1])
-        #     if exp==current[0].split(self.delim)[-1]:
-        #         isque=True
+        if len(exp)>=3:
+            if exp in self.get_current().get_expression():
+                return True
+        else:
+            delims = [',', ';', '・'.decode('utf-8')]
+            exps = split_multiple_delims(self.get_current().get_expression(), delims)
+            if exp in exps:
+                return True
+        return False
+            
 
 if __name__ == "__main__":
     # for testing purposes.
