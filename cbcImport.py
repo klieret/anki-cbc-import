@@ -173,6 +173,7 @@ class cbcImport():
             tooltip(_("Could not open input file %s" % self.importFile),period=1500)
 
         self.update_duplicates()
+        self.data.go_first()
         # status
         self.updateStatus()
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
@@ -191,7 +192,6 @@ class cbcImport():
             entry = self.data._data[i]
             delims = [',', ';', '・'.decode('utf-8')]
             exps = split_multiple_delims(entry.get_expression(), delims)
-            print(entry.get_expression(), exps)
             # if any of the partial expressions is a duplicate
             # we mark the whole db entry as a duplicate!
             for exp in exps:
@@ -201,8 +201,8 @@ class cbcImport():
                     entry.set_dupe(True)
                     # write back!
                     self.data._data[i] = entry
-                    print("Marked Entry %s as duplicate." % entry.get_expression())
-                    print(self.data.len_dupe())
+                    logger.debug("Marked Entry %s as duplicate." % entry.get_expression())
+                    logger.debug("It's the %dth duplicate." % self.data.len_dupe())
                     break
         
         return changes
@@ -420,7 +420,7 @@ class cbcImport():
         text = '<b>In:</b> "%s" ' % short(self.importFile)
         text += '<b>OutA:</b> "%s" ' % short(self.addedFile)
         text += '<b>OutR:</b> "%s" | ' % short(self.restFile)
-        text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),self.data.len_queue(),self.data.len_added(),self.data.len_dupe())
+        text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(), self.data.len_queue(),self.data.len_added(),self.data.len_dupe())
         text += "<b>LA:</b> %s" % format_bool_html(self.lastAdded) 
         self.status.setText(text)   
 

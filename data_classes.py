@@ -90,11 +90,11 @@ class DataSet(object):
     def reduced_cursor(self):
         """ The number of queue (!) elements that with an index
         <= than the cursor."""
-        i = 0
+        ans = 0
         for i in range(self._cursor):
             if self._data[i].is_in_queue():
-                i += 1
-        return i
+                ans += 1
+        return ans
 
     def set_current(self, elem):
         """ Replace the element at the cursor with $elem. """
@@ -113,7 +113,7 @@ class DataSet(object):
     
             for row in reader:
                 fields = [c.decode('utf8').strip() for c in row]
-                print(fields)
+                logger.debug("Processing fields %s" % fields)
                 element = DataElement()             
                 
                 if not len(fields) == len(field_names):
@@ -127,12 +127,13 @@ class DataSet(object):
                 # and you have to take the kana field instead!
                 # Maybe impolement that int element.set_fields_hook instead?
                 if "Expression" in field_names and "Kana" in field_names:
+                    logger.debug("Expression from Kana.")
                     if not element.get_expression():
                         element.set_expression(element.get_field("Kana"))
 
                 element.set_fields_hook()
                 self._data.append(element)
-                print("appended")
+                logger.debug("Appended data element.")
 
     # ----------- Statistics --------------
 
@@ -206,6 +207,9 @@ class DataSet(object):
         If dry == True: self._cursor remains untouched, only the
         return value is given."""
         
+        if not dry:
+            print("Manipulating cursor.")
+
         old_cursor = self._cursor
         new_cursor = self._cursor
         
@@ -219,12 +223,18 @@ class DataSet(object):
         while cursor in range(len(self._data)):
             if self._data[cursor].is_in_queue():
                 new_cursor = cursor
-                print("Is in queue. break.")
                 break 
+            else:
+                if not dry:
+                    print("Skipping element %d" % cursor)
             cursor = func(cursor)
         
         if not dry:
             self._cursor = new_cursor
+
+        if not dry:
+            print("Cursor is now %d" % self._cursor)
+            print("Reduced cursor is now %d" % self.reduced_cursor())
 
         return new_cursor == old_cursor
 
