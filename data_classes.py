@@ -45,14 +45,14 @@ class DataElement(object):
     def is_dupe(self):
         return self._dupe
 
-    def set_dupe(self, bool):
-        self._dupe = bool
+    def set_dupe(self, boolean):
+        self._dupe = boolean
 
     def is_added(self):
         return self._added
 
     def set_added(self, bool):
-        self._added = bool
+        self._added = boolean
 
     # ----------------------------------------        
 
@@ -215,8 +215,7 @@ class DataSet(object):
         cursor = start
         
         while cursor in range(len(self._data)):
-            # print(self._data[cursor].fields['Expression'])
-            if self._data[cursor].is_in_queue:
+            if self._data[cursor].is_in_queue():
                 new_cursor = cursor
                 print("Is in queue. break.")
                 break 
@@ -282,3 +281,20 @@ class DataSet(object):
         #     print(exp,current[0],exp==current[0].split(self.delim)[-1])
         #     if exp==current[0].split(self.delim)[-1]:
         #         isque=True
+
+if __name__ == "__main__":
+    # for testing purposes.
+    import os.path
+    ds = DataSet()
+    filename = "tan.csv"
+    if os.path.exists(filename):
+        ds.load(filename)
+        # set some duplicated events.
+        for i in [1,2,5]:
+            ds._cursor = i
+            element = ds.get_current()
+            element.set_dupe(True)
+            ds.set_current(element)
+        ds.go_first()
+    else:
+        print("Test file %s not found." % filename)
