@@ -5,8 +5,6 @@
 - DataElement (contains all information about one word of vocabulary)
 - DataSet (a class that bundles all DataElements)"""
 
-
-
 import csv
 
 import logging
@@ -21,7 +19,6 @@ class DataElement(object):
     """ Contains all information about one word of vocabulary. """
     
     def __init__(self):
-        
         # The fields that are to be synchronized with 
         # the anki note. 
         # Should be of type 
@@ -31,11 +28,13 @@ class DataElement(object):
         self._dupe = False
         self._added = False
 
+    # ---------- Getters & Setters ---------------
+
     def get_expression(self):
-        return self._fields["Expression"]
+        self.get_field("Expression")
 
     def set_expression(self, value):
-        self._fields["Expression"] = value
+        self.set_field("Expression", value)
 
     def get_field(self, key):
         return self._fields[key]
@@ -54,6 +53,8 @@ class DataElement(object):
 
     def set_added(self, bool):
         self._added = bool
+
+    # ----------------------------------------        
 
     def is_in_queue(self):
         """ Should this element pop up in the current queue 
@@ -78,14 +79,17 @@ class DataSet(object):
         self._cursor = 0
 
     def reverse(self):
+        """ Reverses the order of all elements. """
         self._data.reverse()
         self._cursor = len(self._data) -1 -self._cursor
 
     def get_current(self):
-
+        """ Return the element at the cursor. """
         return self._data[self._cursor]
 
     def reduced_cursor(self):
+        """ The number of queue (!) elements that with an index
+        <= than the cursor."""
         i = 0
         for i in range(self._cursor):
             if self._data[i].is_in_queue():
@@ -93,7 +97,7 @@ class DataSet(object):
         return i
 
     def set_current(self, elem):
-
+        """ Replace the element at the cursor with $elem. """
         self._data[self._cursor] = elem 
 
     def load(self, filename):
@@ -127,9 +131,8 @@ class DataSet(object):
 
                 element.set_fields_hook()
                 self._data.append(element)
-                logger.debug("Appended data element.")
 
-    # Statistics
+    # ----------- Statistics --------------
 
     def count_data(self, boolean):
         """ Count all data etnries with boolean(entry) == True """
@@ -139,43 +142,57 @@ class DataSet(object):
                 i += 1
         return i
 
-        # Return lists
+    def len_all(self):
+        """ Returns the number of all elements. """
+        return self.count_data(lambda e: True)
+
+    def len_added(self):
+        """ Returns the number of all elements that
+        were already added.  """
+        return self.count_data(lambda e: e.is_added())
+
+    def len_dupe(self):
+        """ Returns the number of all elements that were
+        classified as duplicates. """
+        return self.count_data(lambda e: e.is_dupe())
+        
+    def len_queue(self):
+        """ Returns the number of all elements that are
+        currently in the queue. """
+        return self.count_data(lambda e: e.is_in_queue())
+
+    # ----------- Return subsets --------------
 
     def get(self, boolean):
-        """ Returns list with all duplicates. """
+        """ Returns list with all elements with 
+        boolean(element) == True. """
         ret = []
         for entry in self._data:
             if boolean(entry):
                 ret.append(entry)
         return ret
 
-    def len_all(self):
-        return self.count_data(lambda e: True)
-
-    def len_added(self):
-        return self.count_data(lambda e: e.is_added())
-
-    def len_dupe(self):
-        return self.count_data(lambda e: e.is_dupe())
-        
-    def len_queue(self):
-        return self.count_data(lambda e: e.is_in_queue())
-
 
     def get_all(self):
+        """ Returns list of all elements. """
         return self.get(lambda e: True)
 
     def get_added(self):
+        """ Returns list of all elements that were 
+        already added. """
         return self.get(lambda e: e.is_added())
 
     def get_dupe(self):
+        """ Returns list of all elements that were
+        classified as duplicates. """
         return self.get(lambda e: e.is_dupe())
         
     def get_queue(self):
+        """ Returns list of all elements that are currently
+        in the queue. """
         return self.get(lambda e: e.is_in_queue())
 
-
-    # Navigate with skipping.
+    # --------------- Navigate ------------------
 
     def go(self, func, start=None, dry=False):
         """ Updates self._cursor. 
@@ -240,6 +257,8 @@ class DataSet(object):
         Returns False if we are already at the last queue element. """
         
         return self.go(lambda x: x-1, start=len(self._data)-1)
+
+    # ------------------ Booleans --------------------
 
     def is_go_previous_possible(self):
         return self.go_next(dry=True)

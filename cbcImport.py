@@ -4,10 +4,6 @@
 """ cbcImport -- and interface to add notes to Anki on a 
 case by case basis. """
 
-
-
-#pylint: disable-all
-
 from aqt import mw # main window
 from aqt.editor import Editor
 from aqt.addcards import AddCards # addCards dialog
