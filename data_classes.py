@@ -30,17 +30,18 @@ class DataElement(object):
 
     # ---------- Getters & Setters ---------------
 
-    def get_expression(self):
-        return self.get_field("Expression")
-
-    def set_expression(self, value):
-        return self.set_field("Expression", value)
-
     def get_field(self, key):
         return self._fields[key]
 
     def set_field(self, key, value):
         self._fields[key] = value
+        self.set_fields_hook()
+
+    def get_expression(self):
+        return self.get_field("Expression")
+
+    def set_expression(self, value):
+        return self.set_field("Expression", value)
 
     def is_dupe(self):
         return self._dupe
