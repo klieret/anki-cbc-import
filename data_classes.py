@@ -7,13 +7,7 @@
 
 import csv
 
-import logging
-logger = logging.getLogger("cbcImport:data_classes")
-logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler("log.log")
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
-
+from log import logger
 
 class DataElement(object):
     """ Contains all information about one word of vocabulary. """

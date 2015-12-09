@@ -23,12 +23,7 @@ import os
 from data_classes import *
 from util import *
 
-import logging
-logger = logging.getLogger("cbcImport:main")
-logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler("log.log")
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
+from log import logger
 
 # todo: duplicates!
 
