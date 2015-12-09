@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" cbcImport -- and interface to add notes to Anki on a 
+""" cbcImport -- an interface to add notes to Anki on a 
 case by case basis. """
 
 from aqt import mw # main window

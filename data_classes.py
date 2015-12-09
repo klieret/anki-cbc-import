@@ -88,6 +88,10 @@ class DataSet(object):
         """ Return the element at the cursor. """
         return self._data[self._cursor]
 
+    def set_current(self, elem):
+        """ Replace the element at the cursor with $elem. """
+        self._data[self._cursor] = elem 
+
     def reduced_cursor(self):
         """ The number of queue (!) elements that with an index
         <= than the cursor."""
@@ -97,13 +101,9 @@ class DataSet(object):
                 ans += 1
         return ans
 
-    def set_current(self, elem):
-        """ Replace the element at the cursor with $elem. """
-        self._data[self._cursor] = elem 
-
     def load(self, filename):
         """ Loads input file to self._data. """
-        # todo: configure this loading.
+        # todo: should be easily configurable
         # todo: should be easily overrideable
         logger.debug("Trying to load file '%s'." % filename)
         with open(filename,'r') as csvfile:
@@ -126,7 +126,7 @@ class DataSet(object):
                 # for tangorin:
                 # if word doesn't contain any kanji, then the expression field will be empty 
                 # and you have to take the kana field instead!
-                # Maybe impolement that int element.set_fields_hook instead?
+                # Maybe implement that int element.set_fields_hook instead?
                 if "Expression" in field_names and "Kana" in field_names:
                     logger.debug("Expression from Kana.")
                     if not element.get_expression():
@@ -139,7 +139,7 @@ class DataSet(object):
     # ----------- Statistics --------------
 
     def count_data(self, boolean):
-        """ Count all data etnries with boolean(entry) == True """
+        """ Count all data entries with boolean(entry) == True """
         i = 0
         for entry in self._data:
             if boolean(entry):
