@@ -12,7 +12,7 @@ from aqt.qt import *
 
 from anki.hooks import addHook, runHook, wrap
 
-from ignore_dupes import expressionDupe
+from old_ignore_dupes import expressionDupe
 
 import csv
 import os.path
