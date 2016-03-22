@@ -10,6 +10,7 @@ from gettext import gettext as _
 from aqt import mw  # main window
 from aqt.addcards import AddCards  # addCards dialog
 from aqt.utils import shortcut, tooltip
+# todo: no *
 from aqt.qt import *
 from anki.hooks import addHook, runHook, wrap
 from data_classes import VocabularyCollection
@@ -255,7 +256,7 @@ class CbcImport(object):
     def last(self):
         """ Inserts last entry. """
         if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"),period=1000)
+            tooltip(_("Queue is empty!"), period=1000)
             return
         self.data.go_last()
         self.insert()
@@ -436,7 +437,7 @@ class CbcImport(object):
         def shorten(string, length=10):
             """ Cuts off beginning string so that only $mlen characters remain and
             adds '...' at the front if nescessary.
-            :type mlen: int
+            :type length: int
             :type string: str
             """
             if len(string) <= length:
@@ -448,7 +449,7 @@ class CbcImport(object):
         # text += '<b>OutA:</b> "%s" ' % shorten(self.addedFile)
         # text += '<b>OutR:</b> "%s" | ' % shorten(self.restFile)
         text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),
-                                                                        self.data.len_queue(),self.data.len_added(),
+                                                                        self.data.len_queue(), self.data.len_added(),
                                                                         self.data.len_dupe())
         text += "<b>LA:</b> %s" % format_bool_html(self.last_added)
         self.status.setText(text)   
