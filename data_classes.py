@@ -3,11 +3,13 @@
 
 """ Defines two classes:
 - DataElement (contains all information about one word of vocabulary)
-- DataSet (a class that bundles all DataElements)"""
+- DataSet (a class that bundles all DataElements)
+"""
 
 import csv
-
 from log import logger
+from util import split_multiple_delims
+
 
 class DataElement(object):
     """ Contains all information about one word of vocabulary. """
@@ -47,7 +49,7 @@ class DataElement(object):
         return self._added
 
     def set_added(self, bool):
-        self._added = boolean
+        self._added = bool
 
     # ----------------------------------------        
 
@@ -76,7 +78,7 @@ class DataSet(object):
     def reverse(self):
         """ Reverses the order of all elements. """
         self._data.reverse()
-        self._cursor = len(self._data) -1 -self._cursor
+        self._cursor = len(self._data) - 1 - self._cursor
 
     def get_current(self):
         """ Return the element at the cursor. """
@@ -112,7 +114,8 @@ class DataSet(object):
                 element = DataElement()             
                 
                 if not len(fields) == len(field_names):
-                    raise ValueError, "The number of supplied field_names (%d) doesn't match the number of fields in the file %s (%d)." % (len(field_names), filename, len(fields))
+                    raise (ValueError, "The number of supplied field_names (%d) doesn't match the number of "
+                                       "fields in the file %s (%d)." % (len(field_names), filename, len(fields)))
                 
                 for i in range(len(fields)):
                     element.set_field(field_names[i], fields[i])   
@@ -208,7 +211,7 @@ class DataSet(object):
         old_cursor = self._cursor
         new_cursor = self._cursor
         
-        if start == None:
+        if start is None:
             # do NOT use "if not start", because start = 0 gets 
             # also evaluated as False.
             start = func(self._cursor)
@@ -278,7 +281,7 @@ class DataSet(object):
     def is_in_queue(self, exp):
         """ """
         # todo: make real thing
-        if len(exp)>=3:
+        if len(exp) >= 3:
             if exp in self.get_current().get_expression():
                 return True
         else:
@@ -297,11 +300,11 @@ if __name__ == "__main__":
     if os.path.exists(filename):
         ds.load(filename)
         # set some duplicated events.
-        for i in [1,2,5]:
-            ds._cursor = i
-            element = ds.get_current()
-            element.set_dupe(True)
-            ds.set_current(element)
+        for i_ in [1, 2, 5]:
+            ds._cursor = i_
+            element_ = ds.get_current()
+            element_.set_dupe(True)
+            ds.set_current(element_)
         ds.go_first()
     else:
         print("Test file %s not found." % filename)

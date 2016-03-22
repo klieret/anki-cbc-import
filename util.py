@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 def split_multiple_delims(string, delims):
     """ Like the string.split(...) method, but with 
     multiple delimeters. 
@@ -10,6 +11,7 @@ def split_multiple_delims(string, delims):
     for delim in delims:
         string.replace(delim, delims[0])
     return string.split(delims[0])
+
 
 def format_bool_html(value):
     """ HTML/CSS formatting for boolean/None values. """
