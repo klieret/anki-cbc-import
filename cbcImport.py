@@ -9,7 +9,7 @@ import copy
 from gettext import gettext as _
 from aqt import mw  # main window
 from aqt.addcards import AddCards  # addCards dialog
-from aqt.utils import shortcut, tooltip, getSaveFile
+from aqt.utils import shortcut, tooltip
 from aqt.qt import *
 from anki.hooks import addHook, runHook, wrap
 from data_classes import DataSet
@@ -105,11 +105,11 @@ class CbcImport(object):
                 return string
             else:
                 for i in range(n):
-                    out += str(i+1)+". "+split[i]+'<br>'
+                    out += str(i+1) + ". " + split[i] + '<br>'
             return out.strip()
         
-        note['Expression'] = current.get_expression()
-        note['Meaning'] = enum(current.get_field('Meaning'))
+        note['Expression'] = current.expression
+        note['Meaning'] = enum(current['Meaning'])
         # ----------- END CONFIG -----------
         
         return note
@@ -183,17 +183,17 @@ class CbcImport(object):
         for i in range(len(self.data._data)):
             entry = self.data._data[i]
             delims = [',', ';', '・'.decode('utf-8')]
-            exps = split_multiple_delims(entry.get_expression(), delims)
+            exps = split_multiple_delims(entry.expression, delims)
             # if any of the partial expressions is a duplicate
             # we mark the whole db entry as a duplicate!
             for exp in exps:
                 if expression_dupe(self.mw.col, exp):
-                    if not entry.is_dupe():
+                    if not entry.is_dupe:
                         changes = True
-                    entry.set_dupe(True)
+                    entry.is_dupe = True
                     # write back!
                     self.data._data[i] = entry
-                    logger.debug("Marked Entry %s as duplicate." % entry.get_expression())
+                    logger.debug("Marked Entry %s as duplicate." % entry.expression)
                     logger.debug("It's the %dth duplicate." % self.data.len_dupe())
                     break
         
@@ -258,7 +258,7 @@ class CbcImport(object):
         """ Inserts next entry. """
         self.data.go_next()
         self.insert()
-    
+
     def previous(self):
         """ Inserts previous entry. """
         self.data.go_previous()

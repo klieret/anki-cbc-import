@@ -10,7 +10,7 @@ import csv
 from log import logger
 from util import split_multiple_delims
 
-# todo: maybe use magic methods and attribute functions
+
 class DataElement(object):
     """ Contains all information about one word of vocabulary. """
     
@@ -26,39 +26,45 @@ class DataElement(object):
 
     # ---------- Getters & Setters ---------------
 
-    def get_field(self, key):
-        return self._fields[key]
+    def __getitem__(self, item):
+        return self._fields[item]
 
-    def set_field(self, key, value):
+    def __setitem__(self, key, value):
         self._fields[key] = value
         self.set_fields_hook()
 
-    def get_expression(self):
+    @property
+    def expression(self):
         # todo: tangorin specific processing should be moved to a different method?
-        return self.get_field("Expression").split(u"・")[-1]
+        return self.__getitem__("Expression").split(u"・")[-1]
 
-    def set_expression(self, value):
-        return self.set_field("Expression", value)
+    @expression.setter
+    def expression(self, value):
+        self.__setitem__("Expression", value)
 
+    @property
     def is_dupe(self):
         return self._dupe
 
-    def set_dupe(self, boolean):
+    @is_dupe.setter
+    def is_dupe(self, boolean):
         self._dupe = boolean
 
+    @property
     def is_added(self):
         return self._added
 
-    def set_added(self, bool):
+    @is_added.setter
+    def is_added(self, bool):
         self._added = bool
 
     # ----------------------------------------        
 
+    @property
     def is_in_queue(self):
         """ Should this element pop up in the current queue 
         of vocabulary that we want to add? """
-
-        return not self.is_dupe() and not self.is_added()
+        return not self.is_dupe and not self.is_added
 
     def set_fields_hook(self):
         """ Should be run after changes to self._fields were
@@ -94,7 +100,7 @@ class DataSet(object):
         <= than the cursor."""
         ans = 0
         for i in range(self._cursor):
-            if self._data[i].is_in_queue():
+            if self._data[i].is_in_queue:
                 ans += 1
         return ans
 
@@ -119,7 +125,7 @@ class DataSet(object):
                                        "fields in the file %s (%d)." % (len(field_names), filename, len(fields)))
                 
                 for i in range(len(fields)):
-                    element.set_field(field_names[i], fields[i])   
+                    element[field_names[i]] = fields[i]
 
                 # for tangorin:
                 # if word doesn't contain any kanji, then the expression field will be empty 
@@ -127,8 +133,8 @@ class DataSet(object):
                 # todo: Maybe implement that int element.set_fields_hook instead?
                 if "Expression" in field_names and "Kana" in field_names:
                     logger.debug("Expression from Kana.")
-                    if not element.get_expression():
-                        element.set_expression(element.get_field("Kana"))
+                    if not element.expression:
+                        element.expression(element["Kana"])
 
                 element.set_fields_hook()
                 self._data.append(element)
@@ -151,17 +157,17 @@ class DataSet(object):
     def len_added(self):
         """ Returns the number of all elements that
         were already added.  """
-        return self.count_data(lambda e: e.is_added())
+        return self.count_data(lambda e: e.is_added)
 
     def len_dupe(self):
         """ Returns the number of all elements that were
         classified as duplicates. """
-        return self.count_data(lambda e: e.is_dupe())
+        return self.count_data(lambda e: e.is_dupe)
         
     def len_queue(self):
         """ Returns the number of all elements that are
         currently in the queue. """
-        return self.count_data(lambda e: e.is_in_queue())
+        return self.count_data(lambda e: e.is_in_queue)
 
     # ----------- Return subsets --------------
 
@@ -182,17 +188,17 @@ class DataSet(object):
     def get_added(self):
         """ Returns list of all elements that were 
         already added. """
-        return self.get(lambda e: e.is_added())
+        return self.get(lambda e: e.is_added)
 
     def get_dupe(self):
         """ Returns list of all elements that were
         classified as duplicates. """
-        return self.get(lambda e: e.is_dupe())
+        return self.get(lambda e: e.is_dupe)
         
     def get_queue(self):
         """ Returns list of all elements that are currently
         in the queue. """
-        return self.get(lambda e: e.is_in_queue())
+        return self.get(lambda e: e.is_in_queue)
 
     # --------------- Navigate ------------------
 
@@ -220,7 +226,7 @@ class DataSet(object):
         cursor = start
         
         while cursor in range(len(self._data)):
-            if self._data[cursor].is_in_queue():
+            if self._data[cursor].is_in_queue:
                 new_cursor = cursor
                 break 
             else:
@@ -283,11 +289,11 @@ class DataSet(object):
         """ """
         # todo: make real thing
         if len(exp) >= 3:
-            if exp in self.get_current().get_expression():
+            if exp in self.get_current().expression:
                 return True
         else:
             delims = [',', ';', '・'.decode('utf-8')]
-            exps = split_multiple_delims(self.get_current().get_expression(), delims)
+            exps = split_multiple_delims(self.get_current().expression, delims)
             if exp in exps:
                 return True
         return False
@@ -304,7 +310,7 @@ if __name__ == "__main__":
         for i_ in [1, 2, 5]:
             ds._cursor = i_
             element_ = ds.get_current()
-            element_.set_dupe(True)
+            element_.is_dupe = True
             ds.set_current(element_)
         ds.go_first()
     else:
