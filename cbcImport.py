@@ -12,7 +12,7 @@ from aqt.addcards import AddCards  # addCards dialog
 from aqt.utils import shortcut, tooltip
 from aqt.qt import *
 from anki.hooks import addHook, runHook, wrap
-from data_classes import DataSet
+from data_classes import VocabularyCollection
 from util import format_bool_html, split_multiple_delims
 from log import logger
 
@@ -73,26 +73,25 @@ class CbcImport(object):
         # self.addedFile=importFileName+"_added"+importFileExt
         # self.restFile=importFileName+"_rest"+importFileExt
         
-        self.careForDupes = True # Should dupes be treated differently?
-        self.createEmptyFiles = False # Should export files created even if data empty?
-        self.defaultEditor = "leafpad "   # Command to run default editor 
+        self.care_for_dupes = True # Should dupes be treated differently?
+        self.create_empty_files = False # Should export files created even if data empty?
+        self.default_editor = "leafpad "   # Command to run default editor
                                         # (include space or switch)
         
         # ----------- END CONFIG -----------
         
-        self.data = DataSet()
+        self.data = VocabularyCollection()
         
         self.e = None     # instance of the Editor window
         self.mw = None    # instance of main window
         
         # was last Card added to self.added?
-        self.lastAdded = None
+        self.last_added = None
         
         self.buttons = {}
 
     def wrap(self, note, current):
         """ Updates note $note with data from $current. """
-        
         # ----------- BEGIN CONFIG -----------
         self.delim = unicode('・', self.encoding)
         
@@ -116,8 +115,8 @@ class CbcImport(object):
 
     def insert(self):
         """ Inserts an entry from self.queue
-        into the Anki Dialog """
-
+        into the Anki Dialog
+        """
         if self.data.is_queue_empty():
             tooltip(_("Queue is empty!"), period=1000)
             return
@@ -153,29 +152,33 @@ class CbcImport(object):
     
     def load(self):
         """ Loads input file to self.data. """
-        self.data = DataSet()
+        self.data = VocabularyCollection()
 
+        logger.debug("Loading file. ")
         if not self.importFile:
-            tooltip(_("No import file specified"),period=1500)
+            logger.warning("No import file was specified.")
+            tooltip(_("No import file specified"), period=1500)
+            return False
+
         try:
-            logger.debug("Loading. ")
             self.data.load(self.importFile)
         except Exception, e:
-            logger.debug("Loading exception: %s, %s", Exception, e)
-            tooltip(_("Could not open input file %s" % self.importFile),period=1500)
+            logger.debug("Loading exception: %s, %s.", Exception, e)
+            tooltip(_("Could not open input file %s" % self.importFile), period=1500)
 
         self.update_duplicates()
         self.data.go_first()
-        # status
         self.update_status()
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
-    
+
+    # todo: the actual work of this should be moved to data_classes
     def update_duplicates(self):
         """ If self.careForDupes==True: updates the duplicate status of all
         entries in the data. Else: does nothing. 
         Return value (bool): Was something changed?"""
         
-        if not self.careForDupes:
+        if not self.care_for_dupes:
+            logger.debug("Ignoring all duplicates.")
             return False
         
         changes = False
@@ -242,7 +245,7 @@ class CbcImport(object):
     def show(self):
         """ Opens input file in an external editor. """
         if self.importFile:
-            os.system("%s %s &" % (self.defaultEditor, self.importFile))
+            os.system("%s %s &" % (self.default_editor, self.importFile))
         else:
             tooltip(_("No input File!"), period=1500)
     
@@ -251,21 +254,40 @@ class CbcImport(object):
     
     def last(self):
         """ Inserts last entry. """
+        if self.data.is_queue_empty():
+            tooltip(_("Queue is empty!"),period=1000)
+            return
         self.data.go_last()
         self.insert()
     
     def next(self):
         """ Inserts next entry. """
+        if self.data.is_queue_empty():
+            tooltip(_("Queue is empty!"), period=1000)
+            return
+        if not self.data.is_go_next_possible():
+            tooltip(_("Already last item!"), period=1000)
+            return
         self.data.go_next()
         self.insert()
+        self.next()
 
     def previous(self):
         """ Inserts previous entry. """
+        if self.data.is_queue_empty():
+            tooltip(_("Queue is empty!"), period=1000)
+            return
+        if not self.data.is_go_previous_possible():
+            tooltip(_("Already previous item!"), period=1000)
+            return
         self.data.go_previous()
         self.insert()
     
     def first(self):
         """ Inserts first entry. """
+        if self.data.is_queue_empty():
+            tooltip(_("Queue is empty!"),period=1000)
+            return
         self.data.go_first()
         self.insert()
     
@@ -285,17 +307,19 @@ class CbcImport(object):
         Expl.: A lot of other plugins (e.g. furigana completion etc.) activate as 
         soon as 'editFocusLost' is called (normally triggered after manually 
         editing a field). Calling it directly saves us the trouble of clicking
-        into the 'Expression' field and outside again to trigger this. """
-        changedFields = ['Expression', 'Meaning']
-        for field in changedFields:
+        into the 'Expression' field and outside again to trigger this.
+        """
+        changed_fields = ['Expression', 'Meaning']
+        for field in changed_fields:
             field_idx = mw.col.models.fieldNames(self.e.note.model()).index(field)
             runHook('editFocusLost', False, self.e.note, field_idx)
         self.e.loadNote()
     
     def card_added(self, obj, note):
         """ This function gets called once a card is added and
-        is needed to update self.added (list of added cards) """
-        self.lastAdded = False
+        is needed to update self.added (list of added cards)
+        """
+        self.last_added = False
         # save user input
         # this seems to be neccessary
         note.flush()
@@ -307,7 +331,7 @@ class CbcImport(object):
             # of the queue. Problem is that we want to allow some tolerance
             
             if self.data.is_in_queue(exp):
-                self.lastAdded = True
+                self.last_added = True
                 current.is_added = True
                 self.data.set_current(current)
 
@@ -315,8 +339,9 @@ class CbcImport(object):
         
     def my_tooltip(self, *args):
         """ Has to be called separately to overwrite native
-        'Added' tooltip. """
-        if self.lastAdded:
+        'Added' tooltip.
+        """
+        if self.last_added:
             tooltip(_("Added to added"), period=1000)
         else:
             tooltip(_("NOT ADDED TO ADDED!"), period=1000)
@@ -324,6 +349,7 @@ class CbcImport(object):
     # Setup Menu
     # ----------------------------------------
 
+    # todo: declare self.<variable>s in __init__
     def setup_my_menu(self, AddCardsObj):
         """ Creates the line of buttons etc. to control this addon. """
         self.e = AddCardsObj.editor
@@ -339,6 +365,7 @@ class CbcImport(object):
         self.e.outerLayout.addLayout(self.new_icons_box)
         # Buttons
         # Buttons starting with cbcQ_ are only active if queue is non empty
+        # (carefull when changing button name!)
         self.add_my_button("cbc_NewInputFile", self.new_input_file, text="Choose File", tip="Choose new input file.",
                            size="30x120", )
         self.add_my_button("cbc_Load", self.load, text="Load", tip="Load file", size="30x60", )
@@ -366,7 +393,8 @@ class CbcImport(object):
         self.status = QLabel()
         self.update_status()
         self.status_icons_box.addWidget(self.status)
-    
+
+    # todo: add docstring
     def add_my_button(self, name, func, key=None, tip=None, size="30x50", text="", check=False):
         """ Shortcut to add a new button. """       
         # adapted from from /usr/share/anki/aqt/editor.py Lines 308..
@@ -394,7 +422,8 @@ class CbcImport(object):
         self.new_icons_box.addWidget(b)
         self.buttons[name] = b
         return b
-    
+
+    # todo: I have the feeling that this doesn't really work.
     def update_button_states(self):
         for buttonName in self.buttons:
             if buttonName.startswith('cbcQ_'):
@@ -402,23 +431,26 @@ class CbcImport(object):
 
     def update_status(self):
         """ Updates button texts e.g. to display 
-        number of remaining entries etc. """
-        
-        def short(string):
-            if not string:
-                return "None"
-            mlen = 10
-            if len(string) <= mlen:
+        number of remaining entries etc.
+        """
+        def shorten(string, length=10):
+            """ Cuts off beginning string so that only $mlen characters remain and
+            adds '...' at the front if nescessary.
+            :type mlen: int
+            :type string: str
+            """
+            if len(string) <= length:
                 return string
-            return "..."+string[-mlen:]
+            else:
+                return "..." + string[-length:]
         
-        text = '<b>In:</b> "%s" ' % short(self.importFile)
-        text += '<b>OutA:</b> "%s" ' % short(self.addedFile)
-        text += '<b>OutR:</b> "%s" | ' % short(self.restFile)
+        text = '<b>In:</b> "%s" ' % shorten(self.importFile, length=20)
+        # text += '<b>OutA:</b> "%s" ' % shorten(self.addedFile)
+        # text += '<b>OutR:</b> "%s" | ' % shorten(self.restFile)
         text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),
                                                                         self.data.len_queue(),self.data.len_added(),
                                                                         self.data.len_dupe())
-        text += "<b>LA:</b> %s" % format_bool_html(self.lastAdded) 
+        text += "<b>LA:</b> %s" % format_bool_html(self.last_added)
         self.status.setText(text)   
 
 

@@ -11,16 +11,14 @@ from log import logger
 from util import split_multiple_delims
 
 
-class DataElement(object):
-    """ Contains all information about one word of vocabulary. """
-    
+class Word(object):
+    """ Contains information about one word of vocabulary. """
     def __init__(self):
         # The fields that are to be synchronized with 
         # the anki note. 
         # Should be of type 
         # {"fieldname":"value", ...}
         self._fields = {}
-
         self._dupe = False
         self._added = False
 
@@ -35,7 +33,9 @@ class DataElement(object):
 
     @property
     def expression(self):
-        # todo: tangorin specific processing should be moved to a different method?
+        """ Returns the expression (word of vocabulary). """
+        # We use a getter/setter interface here, because this allows form some
+        # processing.
         return self.__getitem__("Expression").split(u"・")[-1]
 
     @expression.setter
@@ -44,6 +44,10 @@ class DataElement(object):
 
     @property
     def is_dupe(self):
+        """ Is the item a duplicate?
+        Note: This is only a setter/getter on internal variables, it won't be checked
+              when called.
+        """
         return self._dupe
 
     @is_dupe.setter
@@ -52,11 +56,15 @@ class DataElement(object):
 
     @property
     def is_added(self):
+        """ Was the item already added?
+        Note: This is only a setter/getter on internal variables, it won't be checked
+              when called.
+        """
         return self._added
 
     @is_added.setter
-    def is_added(self, bool):
-        self._added = bool
+    def is_added(self, boolean):
+        self._added = boolean
 
     # ----------------------------------------        
 
@@ -72,7 +80,7 @@ class DataElement(object):
         pass
 
 
-class DataSet(object):
+class VocabularyCollection(object):
     """ Collects DataElements instances. """
 
     def __init__(self):
@@ -92,11 +100,13 @@ class DataSet(object):
         return self._data[self._cursor]
 
     def set_current(self, elem):
-        """ Replace the element at the cursor with $elem. """
+        """ Replace the element at the cursor with $elem.
+        :type elem: Word
+        """
         self._data[self._cursor] = elem 
 
     def reduced_cursor(self):
-        """ The number of queue (!) elements that with an index
+        """ Returns the number of queue (!) elements with an index
         <= than the cursor."""
         ans = 0
         for i in range(self._cursor):
@@ -105,7 +115,8 @@ class DataSet(object):
         return ans
 
     def load(self, filename):
-        """ Loads input file to self._data. """
+        """ Loads input file to self._data.
+        :type filename: str"""
         # todo: should be easily configurable
         # todo: should be easily overrideable
         logger.debug("Trying to load file '%s'." % filename)
@@ -118,7 +129,7 @@ class DataSet(object):
             for row in reader:
                 fields = [c.decode('utf8').strip() for c in row]
                 logger.debug("Processing fields %s" % fields)
-                element = DataElement()             
+                element = Word()
                 
                 if not len(fields) == len(field_names):
                     raise (ValueError, "The number of supplied field_names (%d) doesn't match the number of "
@@ -143,7 +154,8 @@ class DataSet(object):
     # ----------- Statistics --------------
 
     def count_data(self, boolean):
-        """ Count all data entries with boolean(entry) == True """
+        """ Count all data entries with boolean(entry) == True
+        :type boolean: fct"""
         i = 0
         for entry in self._data:
             if boolean(entry):
@@ -173,7 +185,8 @@ class DataSet(object):
 
     def get(self, boolean):
         """ Returns list with all elements with 
-        boolean(element) == True. """
+        boolean(element) == True.
+        :type boolean: fct"""
         ret = []
         for entry in self._data:
             if boolean(entry):
@@ -204,13 +217,16 @@ class DataSet(object):
 
     def go(self, func, start=None, dry=False):
         """ Updates self._cursor. 
-        Starts with cursor = $start (default: func(self.cursor)
-        and repeatedly call cursor = fun(cursor).
-        Once the element at cursor is an element that should be in 
+        Starts with cursor = $start (default: func(self.cursor))
+        and repeatedly calls cursor = func(cursor).
+        Once the element at the cursor is an element that should be in
         the queue, we set self._cursor = cursor.
-        Returns True if self._cursor was changed, False otherwise. 
-        If dry == True: self._cursor remains untouched, only the
-        return value is given."""
+        Returns True if self._cursor was changed and False otherwise.
+        If dry == True, self._cursor remains untouched, and only the
+        return value is given.
+        :type func: function
+        :type start: int
+        :type dry: bool"""
         
         if not dry:
             print("Manipulating cursor.")
@@ -248,7 +264,9 @@ class DataSet(object):
         (i.e. sets self._cursor to the index of the next queue element)
         Returns False if we are already at the last queue element.
         If dry == True: self._cursor remains untouched, only the
-        return value is given. """
+        return value is given.
+        :type dry: bool
+        """
         return self.go(lambda x: x+1, dry=dry)
 
     def go_previous(self, dry=False):
@@ -256,37 +274,50 @@ class DataSet(object):
         (i.e. sets self._cursor to the index of the previous queue element)
         Returns False if we are already at the first queue element.
         If dry == True: self._cursor remains untouched, only the
-        return value is given. """
-
+        return value is given.
+        :type dry: bool
+        """
         return self.go(lambda x: x-1, dry=dry)
 
     def go_first(self):
         """ Go to first queue element 
         (i.e. sets self._cursor to the index of the first queue element)
-        Returns False if we are already at the first queue element. """
-        
+        Returns False if we are already at the first queue element.
+        """
         return self.go(lambda x: x+1, start=0)
         
     def go_last(self):
         """ Go to last queue element 
         (i.e. sets self._cursor to the index of the last queue element)
-        Returns False if we are already at the last queue element. """
-        
+        Returns False if we are already at the last queue element.
+        """
         return self.go(lambda x: x-1, start=len(self._data)-1)
 
     # ------------------ Booleans --------------------
 
     def is_go_previous_possible(self):
+        """ Can we go to the previous item, or are we already at the end of the
+        queue?
+        """
         return self.go_next(dry=True)
 
     def is_go_next_possible(self):
+        """ Can we go to the next item, or are we already at the end of the
+        queue?
+        """
         return self.go_previous(dry=True)
 
+    # todo: is this what we want?
     def is_queue_empty(self):
+        """ Is the queue empty? Note: This also counts duplicates or already
+        added elements, i.e. returns False if one of those is present in the queue.
+        """
         return self.len_queue() == 0
 
     def is_in_queue(self, exp):
-        """ """
+        """ Is expression $exp already in the queue?
+        :type exp: unicode string
+        """
         # todo: make real thing
         if len(exp) >= 3:
             if exp in self.get_current().expression:
@@ -301,11 +332,13 @@ class DataSet(object):
 
 if __name__ == "__main__":
     # for testing purposes.
+    # added trailing underscore for some variables
+    # to avoid name shaddowing
     import os.path
-    ds = DataSet()
-    filename = "tan.csv"
-    if os.path.exists(filename):
-        ds.load(filename)
+    ds = VocabularyCollection()
+    filename_ = "tan.csv"
+    if os.path.exists(filename_):
+        ds.load(filename_)
         # set some duplicated events.
         for i_ in [1, 2, 5]:
             ds._cursor = i_
@@ -314,4 +347,4 @@ if __name__ == "__main__":
             ds.set_current(element_)
         ds.go_first()
     else:
-        print("Test file %s not found." % filename)
+        print("Test file %s not found." % filename_)
