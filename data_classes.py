@@ -10,7 +10,7 @@ import csv
 from log import logger
 from util import split_multiple_delims
 
-
+# todo: maybe use magic methods and attribute functions
 class DataElement(object):
     """ Contains all information about one word of vocabulary. """
     
@@ -34,7 +34,8 @@ class DataElement(object):
         self.set_fields_hook()
 
     def get_expression(self):
-        return self.get_field("Expression")
+        # todo: tangorin specific processing should be moved to a different method?
+        return self.get_field("Expression").split(u"・")[-1]
 
     def set_expression(self, value):
         return self.set_field("Expression", value)
@@ -123,7 +124,7 @@ class DataSet(object):
                 # for tangorin:
                 # if word doesn't contain any kanji, then the expression field will be empty 
                 # and you have to take the kana field instead!
-                # Maybe implement that int element.set_fields_hook instead?
+                # todo: Maybe implement that int element.set_fields_hook instead?
                 if "Expression" in field_names and "Kana" in field_names:
                     logger.debug("Expression from Kana.")
                     if not element.get_expression():
