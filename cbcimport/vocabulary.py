@@ -9,87 +9,22 @@
 import csv
 from log import logger
 from .util import split_multiple_delims
-
-
-class Word(object):
-    """ Contains information about one word of vocabulary. """
-    def __init__(self):
-        # The fields that are to be synchronized with 
-        # the anki note. 
-        # Should be of type 
-        # {"fieldname":"value", ...}
-        self._fields = {}
-        self._dupe = False
-        self._added = False
-
-    # ---------- Getters & Setters ---------------
-
-    def __getitem__(self, item):
-        return self._fields[item]
-
-    def __setitem__(self, key, value):
-        self._fields[key] = value
-        self.set_fields_hook()
-
-    @property
-    def expression(self):
-        """ Returns the expression (word of vocabulary). """
-        # We use a getter/setter interface here, because this allows form some
-        # processing.
-        return self.__getitem__("Expression").split(u"・")[-1]
-
-    @expression.setter
-    def expression(self, value):
-        self.__setitem__("Expression", value)
-
-    @property
-    def is_dupe(self):
-        """ Is the item a duplicate?
-        Note: This is only a setter/getter on internal variables, it won't be checked
-              when called.
-        """
-        return self._dupe
-
-    @is_dupe.setter
-    def is_dupe(self, boolean):
-        self._dupe = boolean
-
-    @property
-    def is_added(self):
-        """ Was the item already added?
-        Note: This is only a setter/getter on internal variables, it won't be checked
-              when called.
-        """
-        return self._added
-
-    @is_added.setter
-    def is_added(self, boolean):
-        self._added = boolean
-
-    # ----------------------------------------        
-
-    # todo: better not to remove this function
-    @property
-    def is_in_queue(self):
-        """ Should this element pop up in the current queue 
-        of vocabulary that we want to add? """
-        return not self.is_dupe and not self.is_added
-
-    def set_fields_hook(self):
-        """ Should be run after changes to self._fields were
-        made. """              
-        pass
+from word import Word
+from typing import List
 
 
 class VocabularyCollection(object):
     """ Collects DataElements instances. """
 
     def __init__(self):
-        self._data = []
+        self._data = []  # type: List[Word]
     
         # The index of the data element which is to be/was
         # imported to Anki.
-        self._cursor = 0
+        self._cursor = 0  # type: int
+        self.dupes_in_queue = False  # type: bool
+        self.added_in_queue = False  # type: bool
+        self.blacklisted_in_queue = False  # type: bool
 
     def reverse(self):
         """ Reverses the order of all elements. """
@@ -106,15 +41,22 @@ class VocabularyCollection(object):
         """
         self._data[self._cursor] = elem 
 
-    def reduced_cursor(self):
-        """ Returns the number of queue (!) elements with an index
-        <= than the cursor."""
-        ans = 0
-        for i in range(self._cursor):
-            if self._data[i].is_in_queue:
-                ans += 1
-        return ans
+    def is_in_queue(self, element):
+        """
+        :type element: Word
+        :return:
+        """
+        if not self.dupes_in_queue and element.is_dupe:
+            return False
+        if not self.added_in_queue and element.is_added:
+            return False
+        if not self.blacklisted_in_queue and element.is_blacklisted:
+            return False
+        return True
 
+
+
+    # todo: maybe make that a function that generates a VocabularyCollection object instead of a method
     def load(self, filename):
         """ Loads input file to self._data.
         :type filename: str"""
@@ -152,7 +94,16 @@ class VocabularyCollection(object):
                 self._data.append(element)
                 logger.debug("Appended data element.")
 
-    # ----------- Statistics --------------
+    # =============== [ Statistics ] ===============
+
+    def reduced_cursor(self):
+        """ Returns the number of queue (!) elements with an index
+        <= than the cursor."""
+        ans = 0
+        for i in range(self._cursor):
+            if self._data[i].is_expression_in_queue:
+                ans += 1
+        return ans
 
     def count_data(self, boolean):
         """ Count all data entries with boolean(entry) == True
@@ -180,9 +131,9 @@ class VocabularyCollection(object):
     def len_queue(self):
         """ Returns the number of all elements that are
         currently in the queue. """
-        return self.count_data(lambda e: e.is_in_queue)
+        return self.count_data(lambda e: e.is_expression_in_queue)
 
-    # ----------- Return subsets --------------
+    # =============== [ Return subsets ] ===============
 
     def get(self, boolean):
         """ Returns list with all elements with 
@@ -212,9 +163,9 @@ class VocabularyCollection(object):
     def get_queue(self):
         """ Returns list of all elements that are currently
         in the queue. """
-        return self.get(lambda e: e.is_in_queue)
+        return self.get(lambda e: e.is_expression_in_queue)
 
-    # --------------- Navigate ------------------
+    # =============== [ Navigate ] ===============
 
     # todo: should rather return the opposite!
     def go(self, func, start=None, dry=False, quiet=False):
@@ -249,7 +200,7 @@ class VocabularyCollection(object):
 
         while cursor in range(len(self._data)):
             print("trying cursor {}".format(cursor))
-            if self._data[cursor].is_in_queue:
+            if self._data[cursor].is_expression_in_queue:
                 new_cursor = cursor
                 print("In queue. Break!")
                 break 
@@ -301,7 +252,7 @@ class VocabularyCollection(object):
         """
         return self.go(lambda x: x-1, start=len(self._data)-1)
 
-    # ------------------ Booleans --------------------
+    # =============== [ Booleans ] ===============
 
     def is_go_previous_possible(self):
         """ Can we go to the previous item, or are we already at the end of the
@@ -322,7 +273,7 @@ class VocabularyCollection(object):
         """
         return self.len_queue() == 0
 
-    def is_in_queue(self, exp):
+    def is_expression_in_queue(self, exp):
         """ Is expression $exp already in the queue?
         :type exp: unicode string
         """

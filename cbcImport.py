@@ -16,7 +16,7 @@ from aqt.utils import shortcut, tooltip
 # todo: no *
 from aqt.qt import *
 from anki.hooks import addHook, runHook, wrap
-from cbcimport.data_classes import VocabularyCollection
+from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.util import format_bool_html, split_multiple_delims
 from cbcimport.log import logger
 
@@ -336,8 +336,9 @@ class CbcImport(object):
             exp = note['Expression']
             # we have to check if the we really are adding an element
             # of the queue. Problem is that we want to allow some tolerance
-            
-            if self.data.is_in_queue(exp):
+
+            # todo: I don't trust this
+            if self.data.is_expression_in_queue(exp):
                 self.last_added = True
                 current.is_added = True
                 self.data.set_current(current)
