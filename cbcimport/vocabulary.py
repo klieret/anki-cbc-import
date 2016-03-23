@@ -15,7 +15,6 @@ from typing import List
 
 class VocabularyCollection(object):
     """ Collects DataElements instances. """
-
     def __init__(self):
         self._data = []  # type: List[Word]
     
@@ -57,7 +56,8 @@ class VocabularyCollection(object):
     # todo: maybe make that a function that generates a VocabularyCollection object instead of a method
     def load(self, filename):
         """ Loads input file to self._data.
-        :type filename: str"""
+        :type filename: str
+        """
         # todo: should be easily configurable
         # todo: should be easily overrideable
         logger.debug("Trying to load file '%s'." % filename)
@@ -94,8 +94,8 @@ class VocabularyCollection(object):
     # =============== [ Statistics ] ===============
 
     def reduced_cursor(self):
-        """ Returns the number of queue (!) elements with an index
-        <= than the cursor."""
+        """ Returns the number of queue (!) elements with an index <= than the cursor.
+        """
         ans = 0
         for i in range(self._cursor):
             if self.is_in_queue(self._data[i]):
@@ -104,7 +104,8 @@ class VocabularyCollection(object):
 
     def count_data(self, boolean):
         """ Count all data entries with boolean(entry) == True
-        :type boolean: fct"""
+        :type boolean: fct
+        """
         i = 0
         for entry in self._data:
             if boolean(entry):
@@ -116,26 +117,23 @@ class VocabularyCollection(object):
         return self.count_data(lambda e: True)
 
     def len_added(self):
-        """ Returns the number of all elements that
-        were already added.  """
+        """ Returns the number of all elements that were already added. """
         return self.count_data(lambda e: e.is_added)
 
     def len_dupe(self):
-        """ Returns the number of all elements that were
-        classified as duplicates. """
+        """ Returns the number of all elements that were classified as duplicates. """
         return self.count_data(lambda e: e.is_dupe)
         
     def len_queue(self):
-        """ Returns the number of all elements that are
-        currently in the queue. """
+        """ Returns the number of all elements that are currently in the queue. """
         return self.count_data(lambda e: e.is_expression_in_queue)
 
     # =============== [ Return subsets ] ===============
 
     def get(self, boolean):
-        """ Returns list with all elements with 
-        boolean(element) == True.
-        :type boolean: fct"""
+        """ Returns list with all elements with boolean(element) == True.
+        :type boolean: Callable
+        """
         ret = []
         for entry in self._data:
             if boolean(entry):
@@ -148,18 +146,15 @@ class VocabularyCollection(object):
         return self.get(lambda e: True)
 
     def get_added(self):
-        """ Returns list of all elements that were 
-        already added. """
+        """ Returns list of all elements that were already added. """
         return self.get(lambda e: e.is_added)
 
     def get_dupe(self):
-        """ Returns list of all elements that were
-        classified as duplicates. """
+        """ Returns list of all elements that were classified as duplicates. """
         return self.get(lambda e: e.is_dupe)
         
     def get_queue(self):
-        """ Returns list of all elements that are currently
-        in the queue. """
+        """ Returns list of all elements that are currently in the queue. """
         return self.get(lambda e: e.is_expression_in_queue)
 
     # =============== [ Navigate ] ===============
