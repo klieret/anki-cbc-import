@@ -11,7 +11,7 @@ logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('cbcImport:%(levelname)s:%(message)s')
 
 sh_info = logging.StreamHandler(stream=sys.stdout)
-sh_info.setLevel(logging.DEBUG)
+sh_info.setLevel(logging.WARNING)
 sh_info.setFormatter(formatter)
 
 # will be caught by anki and displayed in a 
@@ -29,3 +29,5 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(sh_error)
 logger.addHandler(sh_info)
+
+logger.debug("Log will be saved at {}".format(os.path.abspath(log_path)))

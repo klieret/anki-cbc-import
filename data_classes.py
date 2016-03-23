@@ -68,6 +68,7 @@ class Word(object):
 
     # ----------------------------------------        
 
+    # todo: better not to remove this function
     @property
     def is_in_queue(self):
         """ Should this element pop up in the current queue 
@@ -215,45 +216,52 @@ class VocabularyCollection(object):
 
     # --------------- Navigate ------------------
 
-    def go(self, func, start=None, dry=False):
+    # todo: should rather return the opposite!
+    def go(self, func, start=None, dry=False, quiet=False):
         """ Updates self._cursor. 
         Starts with cursor = $start (default: func(self.cursor))
         and repeatedly calls cursor = func(cursor).
         Once the element at the cursor is an element that should be in
         the queue, we set self._cursor = cursor.
-        Returns True if self._cursor was changed and False otherwise.
+        Returns True if self._cursor remains unchanged and False otherwise.
         If dry == True, self._cursor remains untouched, and only the
         return value is given.
         :type func: function
         :type start: int
-        :type dry: bool"""
+        :type dry: bool
+        :type quiet: bool"""
         
         if not dry:
             print("Manipulating cursor.")
 
         old_cursor = self._cursor
         new_cursor = self._cursor
-        
+
+        print("old_cursor = new_cursor = {}".format(self._cursor))
+
         if start is None:
             # do NOT use "if not start", because start = 0 gets 
             # also evaluated as False.
             start = func(self._cursor)
         
         cursor = start
-        
+        print("start cursor = {}".format(start))
+
         while cursor in range(len(self._data)):
+            print("trying cursor {}".format(cursor))
             if self._data[cursor].is_in_queue:
                 new_cursor = cursor
+                print("In queue. Break!")
                 break 
             else:
-                if not dry:
+                if not quiet:
                     print("Skipping element %d" % cursor)
-            cursor = func(cursor)
+                cursor = func(cursor)
         
         if not dry:
             self._cursor = new_cursor
 
-        if not dry:
+        if not dry and not quiet:
             print("Cursor is now %d" % self._cursor)
             print("Reduced cursor is now %d" % self.reduced_cursor())
 
@@ -274,7 +282,7 @@ class VocabularyCollection(object):
         (i.e. sets self._cursor to the index of the previous queue element)
         Returns False if we are already at the first queue element.
         If dry == True: self._cursor remains untouched, only the
-        return value is given.
+        return value is returned.
         :type dry: bool
         """
         return self.go(lambda x: x-1, dry=dry)
@@ -299,13 +307,13 @@ class VocabularyCollection(object):
         """ Can we go to the previous item, or are we already at the end of the
         queue?
         """
-        return self.go_next(dry=True)
+        return not self.go_previous(dry=True)
 
     def is_go_next_possible(self):
         """ Can we go to the next item, or are we already at the end of the
         queue?
         """
-        return self.go_previous(dry=True)
+        return not self.go_next(dry=True)
 
     # todo: is this what we want?
     def is_queue_empty(self):

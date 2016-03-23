@@ -4,6 +4,9 @@
 """ cbcImport -- an interface to add notes to Anki on a 
 case by case basis. """
 
+# future: add check box skip_added skip_dupes
+# future: second Index for all cards
+
 import glob
 import copy
 from gettext import gettext as _
@@ -17,12 +20,13 @@ from data_classes import VocabularyCollection
 from util import format_bool_html, split_multiple_delims
 from log import logger
 
-# todo:
-# from old_ignore_dupes import expressionDupe
+try:
+    from ignore_dupes.ignore_dupes import expression_dupe
+except ImportError:
+    logger.warning("Couldn't import the ignore_dupes function. Will replace it with a dummy function.")
 
-
-def expression_dupe(*args, **kwargs):
-    return False
+    def expression_dupe(*args, **kwargs):
+        return False
 
 # todo: duplicates!
 
@@ -80,7 +84,7 @@ class CbcImport(object):
                                         # (include space or switch)
         
         # ----------- END CONFIG -----------
-        
+
         self.data = VocabularyCollection()
         
         self.e = None     # instance of the Editor window
@@ -121,7 +125,7 @@ class CbcImport(object):
         if self.data.is_queue_empty():
             tooltip(_("Queue is empty!"), period=1000)
             return
-        elif self.data.is_go_next_possible():
+        if not self.data.is_go_next_possible():
             tooltip(_("Was last entry!"), period=1000)
         
         self.clear_all_fields()
@@ -177,7 +181,9 @@ class CbcImport(object):
         """ If self.careForDupes==True: updates the duplicate status of all
         entries in the data. Else: does nothing. 
         Return value (bool): Was something changed?"""
-        
+
+        logger.debug("Updating duplicates.")
+
         if not self.care_for_dupes:
             logger.debug("Ignoring all duplicates.")
             return False
@@ -187,11 +193,12 @@ class CbcImport(object):
         for i in range(len(self.data._data)):
             entry = self.data._data[i]
             delims = [',', ';', '・'.decode('utf-8')]
-            exps = split_multiple_delims(entry.expression, delims)
+            # todo: not elegant to have to use entry["Expression"] and entry.expression for different purposes
+            exps = split_multiple_delims(entry["Expression"], delims)
             # if any of the partial expressions is a duplicate
             # we mark the whole db entry as a duplicate!
             for exp in exps:
-                if expression_dupe(self.mw.col, exp):
+                if expression_dupe(exp):
                     if not entry.is_dupe:
                         changes = True
                     entry.is_dupe = True
@@ -271,7 +278,6 @@ class CbcImport(object):
             return
         self.data.go_next()
         self.insert()
-        self.next()
 
     def previous(self):
         """ Inserts previous entry. """
@@ -279,7 +285,7 @@ class CbcImport(object):
             tooltip(_("Queue is empty!"), period=1000)
             return
         if not self.data.is_go_previous_possible():
-            tooltip(_("Already previous item!"), period=1000)
+            tooltip(_("Already first item!"), period=1000)
             return
         self.data.go_previous()
         self.insert()
