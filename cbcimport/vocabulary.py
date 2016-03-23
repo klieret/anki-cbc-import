@@ -54,8 +54,6 @@ class VocabularyCollection(object):
             return False
         return True
 
-
-
     # todo: maybe make that a function that generates a VocabularyCollection object instead of a method
     def load(self, filename):
         """ Loads input file to self._data.
@@ -90,7 +88,6 @@ class VocabularyCollection(object):
                     if not element.expression:
                         element.expression(element["Kana"])
 
-                element.set_fields_hook()
                 self._data.append(element)
                 logger.debug("Appended data element.")
 
@@ -101,7 +98,7 @@ class VocabularyCollection(object):
         <= than the cursor."""
         ans = 0
         for i in range(self._cursor):
-            if self._data[i].is_expression_in_queue:
+            if self.is_in_queue(self._data[i]):
                 ans += 1
         return ans
 
@@ -200,7 +197,7 @@ class VocabularyCollection(object):
 
         while cursor in range(len(self._data)):
             print("trying cursor {}".format(cursor))
-            if self._data[cursor].is_expression_in_queue:
+            if self.is_in_queue(self._data[cursor]):
                 new_cursor = cursor
                 print("In queue. Break!")
                 break 

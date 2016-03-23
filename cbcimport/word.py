@@ -34,12 +34,3 @@ class Word(object):
     @expression.setter
     def expression(self, value):
         self.__setitem__("Expression", value)
-
-    # =============== [ MISC ] ===============
-
-    # todo: better to remove this function
-    @property
-    def is_in_queue(self):
-        """ Should this element pop up in the current queue
-        of vocabulary that we want to add? """
-        return not self.is_dupe and not self.is_added
