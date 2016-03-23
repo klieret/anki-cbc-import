@@ -15,10 +15,10 @@ def split_multiple_delims(string, delims):
 
 def format_bool_html(value):
     """ HTML/CSS formatting for boolean/None values. """
-    if value == False:
+    if value is False:
         fcolor = "White"
         bcolor = "Red"
-    elif value == True:
+    elif value is True:
         fcolor = "White"
         bcolor = "Green"
     else:

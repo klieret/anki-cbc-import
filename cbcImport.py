@@ -16,9 +16,9 @@ from aqt.utils import shortcut, tooltip
 # todo: no *
 from aqt.qt import *
 from anki.hooks import addHook, runHook, wrap
-from data_classes import VocabularyCollection
-from util import format_bool_html, split_multiple_delims
-from log import logger
+from cbcimport.data_classes import VocabularyCollection
+from cbcimport.util import format_bool_html, split_multiple_delims
+from cbcimport.log import logger
 
 try:
     from ignore_dupes.ignore_dupes import expression_dupe

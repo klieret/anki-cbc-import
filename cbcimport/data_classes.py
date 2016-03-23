@@ -8,7 +8,7 @@
 
 import csv
 from log import logger
-from util import split_multiple_delims
+from .util import split_multiple_delims
 
 
 class Word(object):
