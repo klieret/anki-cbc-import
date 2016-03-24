@@ -376,20 +376,28 @@ class CbcImport(object):
         # Buttons
         # Buttons starting with cbcQ_ are only active if queue is non empty
         # (carefull when changing button name!)
-        self.add_my_button("cbc_NewInputFile", self.new_input_file, text="Choose File", tip="Choose new input file.",
-                           size="30x120", )
-        self.add_my_button("cbc_Load", self.load, text="Load", tip="Load file", size="30x60", )
-        self.add_my_button("cbc_Show", self.show, text="Show", tip="Show file", size="30x60", )
-        self.add_my_button("cbcQ_Reverse", self.reverse, text="Reverse", tip="Reverse Order", size="30x60", )
-        self.add_my_button("cbc_Save", self.save_button_pushed, text="Save", tip="Saves all added resp. all remaining "
-                                                                             "notes to two files.", size="30x60", )
-        self.add_my_button("cbcQ_First", self.first, text="<<", tip="Fill in first entry", size="30x50", )
-        self.add_my_button("cbcQ_Previous", self.previous, text="<", tip="Fill in previous entry", size="30x50", )
-        self.add_my_button("cbcQ_Fill", self.insert, text="X", tip="Fill in form (Ctrl+F)", size="30x50",
+        self.add_my_button("cbc_NewInputFile", [self.new_input_file, self.update_button_states],
+                           text="Choose File", tip="Choose new input file.", size="30x120", )
+        self.add_my_button("cbc_Load", [self.load, self.update_button_states],
+                           text="Load", tip="Load file", size="30x60", )
+        self.add_my_button("cbcQ_Show", [self.show, self.update_button_states],
+                           text="Show", tip="Show file", size="30x60", )
+        self.add_my_button("cbcQ_Reverse", [self.reverse, self.update_button_states],
+                           text="Reverse", tip="Reverse Order", size="30x60", )
+        self.add_my_button("cbcQ_Save", [self.save_button_pushed, self.update_button_states],
+                           text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
+        self.add_my_button("cbcQ_First", [self.first, self.update_button_states],
+                           text="<<", tip="Fill in first entry", size="30x50", )
+        self.add_my_button("cbcQ_Previous", [self.previous, self.update_button_states],
+                           text="<", tip="Fill in previous entry", size="30x50", )
+        self.add_my_button("cbcQ_Fill", [self.insert, self.update_button_states],
+                           text="X", tip="Fill in form (Ctrl+F)", size="30x50",
                            key="Ctrl+F")
-        self.add_my_button("cbcQ_Next", self.next, text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
+        self.add_my_button("cbcQ_Next", [self.next, self.update_button_states],
+                           text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
                            key="Ctrl+G")
-        self.add_my_button("cbcQ_Last", self.last, text=">>", tip="Fill in last entry", size="30x50", )
+        self.add_my_button("cbcQ_Last", [self.last, self.update_button_states],
+                           text=">>", tip="Fill in last entry", size="30x50", )
         # self.updateButtonStates() # maybe tooltips are better...
         # Status Field
         self.status_icons_box = QHBoxLayout()
@@ -403,20 +411,32 @@ class CbcImport(object):
         self.status = QLabel()
         self.update_status()
         self.status_icons_box.addWidget(self.status)
+        self.update_button_states()
 
     # todo: add docstring
-    def add_my_button(self, name, func, key=None, tip=None, size="30x50", text="", check=False):
-        """ Shortcut to add a new button. """       
-        # adapted from from /usr/share/anki/aqt/editor.py Lines 308..
+    def add_my_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
+        """ Shortcut to add a new button to self.new_icons_box.
+        :param name: We do self.buttons[name] = button
+        :param funcs: List of functions the button should be connected to.
+        :param key: ?
+        :param tip: Tooltip
+        :param size: Either None or of form "30x50" etc.
+        :param text: Text of the button
+        :param check: Is button checkable?
+        :return: button
+        """
+        # adapted from from /usr/share/anki/aqt/editor.py Lines 308 and following
         b = QPushButton(text)
-        # For some reason, if you don't deactivate manually the following
-        # two options, the first button will start to behave like the Add-Button.
+        # The Focus should still be on the 'Add' button.
         b.setAutoDefault(False)
         b.setDefault(False)
         if check:
-            b.connect(b, SIGNAL("clicked(bool)"), func)
+            b.setCheckable(True)
+            for func in funcs:
+                b.connect(b, SIGNAL("clicked(bool)"), func)
         else:
-            b.connect(b, SIGNAL("clicked()"), func)
+            for func in funcs:
+                b.connect(b, SIGNAL("clicked()"), func)
         if size:
             if size.split('x')[0]:
                 b.setFixedHeight(int(size.split('x')[0]))
@@ -427,17 +447,23 @@ class CbcImport(object):
             b.setShortcut(QKeySequence(key))
         if tip:
             b.setToolTip(shortcut(tip))
-        if check:
-            b.setCheckable(True)
         self.new_icons_box.addWidget(b)
         self.buttons[name] = b
         return b
 
-    # todo: I have the feeling that this doesn't really work.
     def update_button_states(self):
-        for buttonName in self.buttons:
-            if buttonName.startswith('cbcQ_'):
-                self.buttons[buttonName].setEnabled(not self.data.is_queue_empty())
+        if not self.data.is_queue_empty():
+            for buttonName in self.buttons:
+                if buttonName.startswith('cbcQ_'):
+                    self.buttons[buttonName].setEnabled(True)
+        self.buttons["cbcQ_Next"].setEnabled(self.data.is_go_next_possible())
+        self.buttons["cbcQ_Last"].setEnabled(self.data.is_go_next_possible())
+        self.buttons["cbcQ_Previous"].setEnabled(self.data.is_go_previous_possible())
+        self.buttons["cbcQ_First"].setEnabled(self.data.is_go_previous_possible())
+        if self.data.is_queue_empty():
+            for buttonName in self.buttons:
+                if buttonName.startswith('cbcQ_'):
+                    self.buttons[buttonName].setEnabled(False)
 
     def update_status(self):
         """ Updates button texts e.g. to display
