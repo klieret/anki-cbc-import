@@ -22,6 +22,7 @@ class Word(object):
         self._fields = {}  # type: Dict[str, str]
 
         # Name of the expression field
+        # todo: should be loaded from config file
         self.expression_field = "Expression"
         self.meaning_field = "Meaning"
         self.kana_field = "Kana"

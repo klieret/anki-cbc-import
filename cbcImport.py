@@ -4,8 +4,7 @@
 """ cbcImport -- an interface to add notes to Anki on a 
 case by case basis. """
 
-# future: add check box skip_added skip_dupes
-# future: second Index for all cards
+# future: add check box skip_added skip_dupes, skip_black, skip_normal
 
 import glob
 import copy
@@ -17,7 +16,6 @@ from aqt.utils import shortcut, tooltip
 from aqt.qt import *
 from anki.hooks import addHook, runHook, wrap
 from cbcimport.vocabulary import VocabularyCollection
-from cbcimport.util import split_multiple_delims
 from cbcimport.log import logger
 
 try:
@@ -28,8 +26,6 @@ except ImportError:
     def expression_dupe(*args, **kwargs):
         return False
 
-# TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
-# TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...) 
 
 
 class CbcImport(object):
@@ -37,42 +33,20 @@ class CbcImport(object):
         """ init and basic configuration """
         # todo: move config to config object
         # ----------- BEGIN CONFIG -----------   
-        # file to import (change the "..." part)
-        # self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
-        # self.importFile=os.path.expanduser('~/Desktop/rest.csv')
-        self.defaultDir = os.path.expanduser("~/Desktop/")
+        self.default_dir = os.path.expanduser("~/Desktop/")
         try:
+            # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...)
             # last file of all files that are on Desktop and have extension .csv
-            self.importFile = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1] 
-        except:
-            self.importFile = None
-        # delimiter of the input file (character that separates
-        # different rows). E.g. '\t' for Tabulator, ';' for ; etc. 
-        self.delim = '\t'
-        
-        # character encoding to be used for input and output
-        self.encoding = 'utf-8'
-        if self.importFile:
-            import_file_name, import_file_ext = os.path.splitext(self.importFile)
-        else:
-            import_file_name = None
-            import_file_ext = None
-        # files where the subset of added/remaining Cards will be Saved
-        # (by default: self.importFile - file ending + "added"/"rest" + extension)
-        # Note that the file contents will be overwritten!
-        # If self.addedFile=None or False or "" is specified
-        # no output will be created for addedFile (restFile analogous)
-        self.addedFile = None
-        self.restFile = os.path.expanduser('~/Desktop/rest.csv')
-        # self.addedFile=os.path.expanduser('~/Desktop/added.csv')
-        # self.restFile=os.path.expanduser('~/Desktop/rest.csv')
-        # self.addedFile=importFileName+"_added"+importFileExt
-        # self.restFile=importFileName+"_rest"+importFileExt
-        
-        self.care_for_dupes = True # Should dupes be treated differently?
-        self.create_empty_files = False # Should export files created even if data empty?
-        self.default_editor = "leafpad "   # Command to run default editor
-                                        # (include space or switch)
+            self.import_file = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1]
+        except IndexError:
+            self.import_file = None
+        # todo: are we still gonna support that
+        self.added_file = None
+        self.rest_file = os.path.expanduser('~/Desktop/rest.csv')
+
+        # todo: implement with config
+        # todo: use Process module to launch in its own thread
+        self.default_editor = "leafpad {filename} &"   # Command to run default editor (include space or switch)
         
         # ----------- END CONFIG -----------
 
@@ -89,20 +63,6 @@ class CbcImport(object):
         self.status_icons_box = None  # type: QBoxLayout
         self.new_icons_box = None  # type: QBoxLayout
 
-    def wrap(self, note, current):
-        """ Updates note $note with data from $current. """
-        # ----------- BEGIN CONFIG -----------
-        self.delim = unicode('・', self.encoding)
-
-        # TODO: the actual splitting should also be done in the word object; note that this is tangorin specific
-
-
-        note['Expression'] = current.splitted_expression[0]
-        note['Meaning'] = current.formatted_meaning
-        # ----------- END CONFIG -----------
-        
-        return note
-
     def insert(self):
         """ Inserts an entry from self.queue
         into the Anki Dialog
@@ -115,11 +75,12 @@ class CbcImport(object):
         
         self.clear_all_fields()
         
-        current = self.data.get_current()  # source
-        note = copy.copy(self.e.note)         # target
-        
-        self.e.setNote(self.wrap(note, current))
-        
+        current = self.data.get_current()
+        note = copy.copy(self.e.note)
+        note['Expression'] = current.splitted_expression[0]
+        note['Meaning'] = current.formatted_meaning
+
+        self.e.setNote(note)
         self.run_hooks()
         self.update_status()
     
@@ -135,9 +96,9 @@ class CbcImport(object):
     def new_input_file(self):
         filters = "csv Files (*.csv);;All Files (*)"
         import_file = QFileDialog.getSaveFileName(QFileDialog(), "Pick a file to import.",
-                                                  self.defaultDir, filters, options=QFileDialog.DontConfirmOverwrite)
+                                                  self.default_dir, filters, options=QFileDialog.DontConfirmOverwrite)
         if import_file:
-            self.importFile = import_file
+            self.import_file = import_file
         self.update_status()
     
     def load(self):
@@ -145,16 +106,16 @@ class CbcImport(object):
         self.data = VocabularyCollection()
 
         logger.debug("Loading file. ")
-        if not self.importFile:
+        if not self.import_file:
             logger.warning("No import file was specified.")
             tooltip(_("No import file specified"), period=1500)
             return False
 
         try:
-            self.data.load(self.importFile)
+            self.data.load(self.import_file)
         except Exception, e:
             logger.debug("Loading exception: %s, %s.", Exception, e)
-            tooltip(_("Could not open input file %s" % self.importFile), period=1500)
+            tooltip(_("Could not open input file %s" % self.import_file), period=1500)
 
         self.update_duplicates()
         self.data.go_first()
@@ -169,22 +130,23 @@ class CbcImport(object):
 
         logger.debug("Updating duplicates.")
 
-        if not self.care_for_dupes:
-            logger.debug("Ignoring all duplicates.")
-            return False
+        # todo: implement that in Vocabulary
+        # if not self.care_for_dupes:
+        #     logger.debug("Ignoring all duplicates.")
+        #     return False
         
         changes = False
 
         for i in range(len(self.data._data)):
             entry = self.data._data[i]
-            logger.debug(u"Checking {}".format(entry["Expression"]))
-            if expression_dupe(entry["Expression"]):
+            logger.debug(u"Checking {}".format(entry.expression))
+            if expression_dupe(entry.expression):
                 if not entry.is_dupe:
                     changes = True
                 entry.is_dupe = True
                 # write back!
                 self.data._data[i] = entry
-                logger.debug("Marked Entry %s as duplicate." % entry["Expression"])
+                logger.debug("Marked Entry %s as duplicate." % entry.expression)
                 logger.debug("It's the %dth duplicate." % self.data.len_dupe())
 
         return changes
@@ -195,25 +157,25 @@ class CbcImport(object):
 
         # todo
 
-        # if self.addedFile and (self.createEmptyFiles or len(self.added)>0):
+        # if self.added_file and (self.createEmptyFiles or len(self.added)>0):
         #     try:
-        #         with open(self.addedFile,'wb') as csvfile:
+        #         with open(self.added_file,'wb') as csvfile:
         #             writer=csv.writer(csvfile, delimiter=self.delim)
         #             for row in self.added:
         #                 row=[c.encode(self.encoding) for c in row]
         #                 writer.writerow(row)
         #     except:
-        #         tooltip(_("Could not open output file %s" % self.addedFile),period=1500)
+        #         tooltip(_("Could not open output file %s" % self.added_file),period=1500)
                 
-        # if self.restFile and (self.createEmptyFiles or len(self.rest)>0):
+        # if self.rest_file and (self.createEmptyFiles or len(self.rest)>0):
         #     try:
-        #         with open(self.restFile,'wb') as csvfile:
+        #         with open(self.rest_file,'wb') as csvfile:
         #             writer=csv.writer(csvfile, delimiter=self.delim)
         #             for row in self.rest:
         #                 row=[c.encode(self.encoding) for c in row]
         #                 writer.writerow(row)
         #     except:
-        #         tooltip(_("Could not open output file %s" % self.restFile),period=1500)
+        #         tooltip(_("Could not open output file %s" % self.rest_file),period=1500)
 
     def save_button_pushed(self):
         """ What happens if save button is pushed:
@@ -221,9 +183,9 @@ class CbcImport(object):
         self.save()
         # # tooltip
         # text=""
-        # if self.addedFile: 
+        # if self.added_file:
         #     text+="Saved added "
-        # if self.restFile:
+        # if self.rest_file:
         #     text+="Saved rest"
         # if text=="":
         #     text+="NO FILE TO SAVE"
@@ -231,8 +193,8 @@ class CbcImport(object):
 
     def show(self):
         """ Opens input file in an external editor. """
-        if self.importFile:
-            os.system("%s %s &" % (self.default_editor, self.importFile))
+        if self.import_file.strip():
+            os.system(self.default_editor.format(filename=self.import_file))
         else:
             tooltip(_("No input File!"), period=1500)
     
@@ -279,33 +241,30 @@ class CbcImport(object):
             field_idx = mw.col.models.fieldNames(self.e.note.model()).index(field)
             runHook('editFocusLost', False, self.e.note, field_idx)
         self.e.loadNote()
-    
+
+    # noinspection PyUnusedLocal
     def card_added(self, obj, note):
         """ This function gets called once a card is added and
-        is needed to update self.added (list of added cards)
+        is needed to update self.added (list of added cards).
+        :param obj: ? (we need this since this is called via hook)
+        :param note: The note that was just added.
         """
         self.last_added = False
         # save user input
         # this seems to be neccessary
         note.flush()
         if self.data.is_go_next_possible():
-            # current queue Element Expression
-            current = self.data.get_current()
-            exp = note['Expression']
-            # we have to check if the we really are adding an element
+            # We have to check if the we really are adding an element
             # of the queue. Problem is that we want to allow some tolerance
-
-            # todo: I don't trust this
-            if self.data.is_expression_in_queue(exp):
+            if self.data.is_expression_in_queue(note['Expression']):
                 self.last_added = True
-                current.is_added = True
-                self.data.set_current(current)
+                self.data.get_current().is_added = True
 
         self.update_status()
-        
-    def my_tooltip(self, *args):
-        """ Has to be called separately to overwrite native
-        'Added' tooltip.
+
+    # noinspection PyUnusedLocal
+    def added_tooltip(self, *args):
+        """ Has to be called separately to overwrite native 'Added' tooltip.
         """
         if self.last_added:
             tooltip(_("Added to added"), period=1000)
@@ -316,7 +275,9 @@ class CbcImport(object):
     # ----------------------------------------
 
     def setup_my_menu(self, add_cards_dialogue):
-        """ Creates the line of buttons etc. to control this addon. """
+        """ Creates the line of buttons etc. to control this addon.
+        :param add_cards_dialogue
+        """
         self.e = add_cards_dialogue.editor
         self.mw = add_cards_dialogue.mw
         # adapted from from /usr/share/anki/aqt/editor.py Lines 350
@@ -453,7 +414,7 @@ class CbcImport(object):
             return """<span style="background-color: %s; color: %s">%s</span>""" % (bcolor, fcolor, str(value))
 
         divider = "<big>|</big>"
-        texts = [format_key_value("In", shorten(self.importFile, length=20)),
+        texts = [format_key_value("In", shorten(self.import_file, length=20)),
                  divider,
                  format_key_value("Cur", "{}/{}".format(self.data.reduced_cursor(), self.data.len_queue())),
                  format_key_value("Idx", "{}/{}".format(self.data.full_cursor(), self.data.len_all())),
@@ -478,5 +439,5 @@ AddCards.addCards = wrap(AddCards.addCards, lambda add_cards_obj: runHook("toolt
 # add functions to those hooks
 addHook("addEditorSetup", myImport.setup_my_menu)
 addHook("unloadProfile", myImport.save)
-addHook("tooltip", myImport.my_tooltip)
+addHook("tooltip", myImport.added_tooltip)
 addHook("addHistory", myImport.card_added)
