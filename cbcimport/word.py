@@ -8,17 +8,20 @@ from .util import split_multiple_delims
 class Word(object):
     """ Contains information about one word of vocabulary.
     All data fields can be accessed by Word[field_name].
-    Note however that the expression should be accessed by Word.exression! """
-    # future: warning if accessed otherwise?
+    Only note that we rigged it so that Word[Word.expression_field] returns
+    Word[Word.kana_field] if the Kana field is set but the Expression field is not.
+    The real Expression field can still be accessed as Word._fields[Word.expression_field]"""
+    # Note: We use a lot of property decorators in this class, beccause it makes it easier to
+    #       switch between internal variables and funtions.
     # ========================= [ Basics ] =========================
 
     def __init__(self):
         # The fields that are to be synchronized with the anki note:
         self._fields = {}  # type: Dict[str, str]
 
-        # cleanup: Is this nescessary?
         # Name of the expression field
         self.expression_field = "Expression"
+        self.meaning_field = "Meaning"
         self.kana_field = "Kana"
 
         # Queue attributes
@@ -32,6 +35,9 @@ class Word(object):
     # ========================= [ Getters, Setters & Co ] =========================
 
     def __getitem__(self, item):
+        if item == self.expression_field:
+            if not self.__contains__(self.expression_field) and self.__contains__(self.kana_field):
+                return self.__getitem__(self.kana_field)
         return self._fields[item]
 
     def __setitem__(self, key, value):
@@ -44,33 +50,42 @@ class Word(object):
         return self._fields.keys()
 
     @property
-    def expression(self):
-        # we need this for importing from the Tangorin online dictionary:
-        # if the expression doesn't contain any Kanji, then the Expression field might
-        # be empty and only the kana field has an entry. We return that one instead.
-        if not self.__contains__(self.expression_field) and self.__contains__(self.kana_field):
-            self.__setitem__(self.expression_field, self.__getitem__(self.kana_field))
-        return self.__getitem__(self.expression_field)
-
-    @property
     def splitted_expression(self):
         """ Returns the expression field splitted up into different expressions/writings.
         E.g. If the expression is "そびえる・聳える", returns ["そびえる", "聳える"].
         The list should be sorted in such a way that the most frequent expression comes first."""
         # We use a getter/setter interface here, because this allows form some
         # processing.
-        print("In splitted.")
         delims = [u",", u";", u"、", u"；", u"・"]
-        splitted = split_multiple_delims(unicode(self.expression), delims=delims)
+        splitted = split_multiple_delims(unicode(self.__getitem__(self.expression_field)), delims=delims)
         if self.reverse_splitting:
             splitted.reverse()
         print(splitted)
         return splitted
 
+    @property
+    def splitted_meaning(self):
+        """ If there are several meanings, a list of all of those meanings is returned. """
+        delims = [u"/"]  # this is specific for the platform your importing from. Here it's tangorin.
+        return split_multiple_delims(self.__getitem__(self.meaning_field), delims=delims)
+
+    @property
+    def formatted_meaning(self):
+        """ Formats the meaning field. In particular, if there are several meanings, they
+        are enumerated.
+        """
+        split = self.splitted_meaning
+        if len(split) == 1:
+            return split[0]
+        lines = []
+        for item_no, item in enumerate(split):
+            lines.append("{}. {}".format(item_no + 1,  item.strip()))
+        return '<br>'.join(lines)
+
     # ========================= [ Other magic methods] =========================
 
     def __str__(self):
-        return "<{} object for Expression {}>".format(self.expression)
+        return u"<{} object for Expression {}>".format(self.__class__.__name__, self.__getitem__(self.expression_field))
 
     def __repr__(self):
         return self.__str__()

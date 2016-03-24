@@ -94,22 +94,11 @@ class CbcImport(object):
         # ----------- BEGIN CONFIG -----------
         self.delim = unicode('・', self.encoding)
 
-        # TODO: the actual splitting should also be done in the word object
-        # Fixme: Why should the delimeter be '/'? Not sure if working.
-        # TODO splitting as separate method
-        def enum(string):
-            split = string.split('/')
-            out = ""
-            n = len(split)
-            if n == 1:
-                return string
-            else:
-                for i in range(n):
-                    out += str(i+1) + ". " + split[i] + '<br>'
-            return out.strip()
-        
+        # TODO: the actual splitting should also be done in the word object; note that this is tangorin specific
+
+
         note['Expression'] = current.splitted_expression[0]
-        note['Meaning'] = enum(current['Meaning'])
+        note['Meaning'] = current.formatted_meaning
         # ----------- END CONFIG -----------
         
         return note
@@ -188,14 +177,14 @@ class CbcImport(object):
 
         for i in range(len(self.data._data)):
             entry = self.data._data[i]
-            logger.debug(u"Checking {}".format(entry.expression))
-            if expression_dupe(entry.expression):
+            logger.debug(u"Checking {}".format(entry["Expression"]))
+            if expression_dupe(entry["Expression"]):
                 if not entry.is_dupe:
                     changes = True
                 entry.is_dupe = True
                 # write back!
                 self.data._data[i] = entry
-                logger.debug("Marked Entry %s as duplicate." % entry.expression)
+                logger.debug("Marked Entry %s as duplicate." % entry["Expression"])
                 logger.debug("It's the %dth duplicate." % self.data.len_dupe())
 
         return changes

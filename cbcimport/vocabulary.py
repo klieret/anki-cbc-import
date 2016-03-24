@@ -277,11 +277,11 @@ class VocabularyCollection(object):
         """
         # todo: make real thing
         if len(exp) >= 3:
-            if exp in self.get_current().expression:
+            if exp in self.get_current()["Expression"]:
                 return True
         else:
             delims = [',', ';', '・'.decode('utf-8')]
-            exps = split_multiple_delims(self.get_current().expression, delims)
+            exps = split_multiple_delims(self.get_current()["Expression"], delims)
             if exp in exps:
                 return True
         return False
