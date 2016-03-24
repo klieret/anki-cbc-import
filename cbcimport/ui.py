@@ -12,7 +12,8 @@ from gettext import gettext as _
 from aqt import mw  # main window
 from aqt.utils import shortcut, tooltip
 import os.path
-from aqt.qt import QFileDialog, QHBoxLayout, isMac, QPushButton, QLabel, SIGNAL, QIcon, QKeySequence, QBoxLayout
+from aqt.qt import QFileDialog, QHBoxLayout, isMac, QPushButton, QLabel, SIGNAL, QIcon, QKeySequence, QBoxLayout, \
+    QCheckBox, QSpacerItem, QVBoxLayout, QFrame
 from anki.hooks import runHook
 from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.log import logger
@@ -42,6 +43,7 @@ class CbcImportUi(object):
 
         # Qt objects:
         self.buttons = {}  # type: dict[str: QPushButton]
+        self.checkboxes = {}  # type: dict[str: QCheckBox]
         self.status = None  # type: QLabel
         self.status_box = None  # type: QBoxLayout
         self.button_box = None  # type: QBoxLayout
@@ -247,12 +249,18 @@ class CbcImportUi(object):
         self.e = editor.editor
         self.mw = editor.mw
 
+        self.frame = QFrame()
+        self.frame.setFrameShape(QFrame.Box)
+        self.frame.setFrameShadow(QFrame.Sunken)
+        self.cbc_box = QVBoxLayout(self.frame)
+        self.e.outerLayout.addWidget(self.frame)
+
         self.button_box = QHBoxLayout()
         self.status_box = QHBoxLayout()
         self.settings_box = QHBoxLayout()
 
         # adapted from from /usr/share/anki/aqt/editor.py Lines 350
-        for box in [self.button_box, self.status_box, self.settings_box]:
+        for box in [self.cbc_box]:
             if not isMac:
                 box.setMargin(6)
                 box.setSpacing(0)
@@ -261,40 +269,53 @@ class CbcImportUi(object):
                 box.setMargin(0)
                 box.setSpacing(14)
 
-        self.e.outerLayout.addLayout(self.button_box)
-        self.e.outerLayout.addLayout(self.status_box)
-        self.e.outerLayout.addLayout(self.settings_box)
+        self.cbc_box.addLayout(self.button_box)
+        self.cbc_box.addLayout(self.status_box)
+        self.cbc_box.addLayout(self.settings_box)
 
         # Buttons starting with cbcQ_ are only active if queue is non empty
         # (carefull when changing button name!)
-        self.add_button("cbc_NewInputFile", [self.new_input_file, self.update_button_states],
+        self.add_button("cbc_NewInputFile", [self.new_input_file, self.update_enabled],
                         text="Choose File", tip="Choose new input file.", size="30x120", )
-        self.add_button("cbc_Load", [self.load, self.update_button_states],
+        self.add_button("cbc_Load", [self.load, self.update_enabled],
                         text="Load", tip="Load file", size="30x60", )
-        self.add_button("cbcQ_Show", [self.show, self.update_button_states],
+        self.add_button("cbcQ_Show", [self.show, self.update_enabled],
                         text="Show", tip="Show file", size="30x60", )
-        self.add_button("cbcQ_Reverse", [self.reverse, self.update_button_states],
+        self.add_button("cbcQ_Reverse", [self.reverse, self.update_enabled],
                         text="Reverse", tip="Reverse Order", size="30x60", )
-        self.add_button("cbcQ_Save", [self.save_button_pushed, self.update_button_states],
+        self.add_button("cbcQ_Save", [self.save_button_pushed, self.update_enabled],
                         text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
-        self.add_button("cbcQ_First", [self.first, self.update_button_states],
+        self.add_button("cbcQ_First", [self.first, self.update_enabled],
                         text="<<", tip="Fill in first entry", size="30x50", )
-        self.add_button("cbcQ_Previous", [self.previous, self.update_button_states],
+        self.add_button("cbcQ_Previous", [self.previous, self.update_enabled],
                         text="<", tip="Fill in previous entry", size="30x50", )
-        self.add_button("cbcQ_Fill", [self.insert, self.update_button_states],
+        self.add_button("cbcQ_Fill", [self.insert, self.update_enabled],
                         text="X", tip="Fill in form (Ctrl+F)", size="30x50",
                         key="Ctrl+F")
-        self.add_button("cbcQ_Next", [self.next, self.update_button_states],
+        self.add_button("cbcQ_Next", [self.next, self.update_enabled],
                         text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
                         key="Ctrl+G")
-        self.add_button("cbcQ_Last", [self.last, self.update_button_states],
+        self.add_button("cbcQ_Last", [self.last, self.update_enabled],
                         text=">>", tip="Fill in last entry", size="30x50", )
+
+        self.add_checkbox("cbcQ_skip_dupe", None, "Skip Dupe")
+        self.add_checkbox("cbcQ_skip_added", None, "Skip Added")
+        self.add_checkbox("cbcQ_skip_black", None, "Skip Black")
+        self.add_checkbox("cbcQ_skip_rest", None, "Skip Rest")
 
         self.status = QLabel()
         self.update_status()
         self.status_box.addWidget(self.status)
 
-        self.update_button_states()
+        self.update_enabled()
+
+    def add_checkbox(self, name, funcs, text):
+        checkbox = QCheckBox()
+        checkbox.adjustSize()
+        checkbox.setText(text)
+        checkbox.adjustSize()
+        self.settings_box.addWidget(checkbox)
+        self.checkboxes[name] = checkbox
 
     def add_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
         """ Shortcut to add a new button to self.button_box.
@@ -340,11 +361,14 @@ class CbcImportUi(object):
         self.buttons[name] = button
         return button
 
-    def update_button_states(self):
+    def update_enabled(self):
         if not self.data.is_queue_empty():
             for buttonName in self.buttons:
                 if buttonName.startswith('cbcQ_'):
                     self.buttons[buttonName].setEnabled(True)
+            for checkboxName in self.checkboxes:
+                if checkboxName.startswith('cbcQ_'):
+                    self.checkboxes[checkboxName].setEnabled(True)
         self.buttons["cbcQ_Next"].setEnabled(self.data.is_go_next_possible())
         self.buttons["cbcQ_Last"].setEnabled(self.data.is_go_next_possible())
         self.buttons["cbcQ_Previous"].setEnabled(self.data.is_go_previous_possible())
@@ -353,6 +377,9 @@ class CbcImportUi(object):
             for buttonName in self.buttons:
                 if buttonName.startswith('cbcQ_'):
                     self.buttons[buttonName].setEnabled(False)
+            for checkboxName in self.checkboxes:
+                if checkboxName.startswith('cbcQ_'):
+                    self.checkboxes[checkboxName].setEnabled(False)
 
     def update_status(self):
         """ Updates button texts e.g. to display
