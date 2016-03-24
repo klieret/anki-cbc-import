@@ -453,14 +453,18 @@ class CbcImport(object):
                 return string
             else:
                 return "..." + string[-length:]
-        
-        text = '<b>In:</b> "%s" ' % shorten(self.importFile, length=20)
-        # text += '<b>OutA:</b> "%s" ' % shorten(self.addedFile)
-        # text += '<b>OutR:</b> "%s" | ' % shorten(self.restFile)
-        text += "<b>Idx:</b> %d/%d <b>Add:</b> %d <b>Dup:</b> %d | " % (self.data.reduced_cursor(),
-                                                                        self.data.len_queue(), self.data.len_added(),
-                                                                        self.data.len_dupe())
-        text += "<b>LA:</b> %s" % format_bool_html(self.last_added)
+
+        text = "<b>In:</b> \"{inf}\" <b>Cur:</b> {red}/{queue} <b>Idx</b>: {full}/{all} <b>Add:</b> {add} " \
+               "<b>Dup:</b> {dup} <b>Black:</b> {black}| <b>LA:</b> {la}".format(
+                                                               inf=shorten(self.importFile, length=20),
+                                                               red=self.data.reduced_cursor(),
+                                                               queue=self.data.len_queue(),
+                                                               full=self.data.full_cursor(),
+                                                               all=self.data.len_all(),
+                                                               add=self.data.len_added(),
+                                                               dup=self.data.len_dupe(),
+                                                               black=self.data.len_black(),
+                                                               la=self.last_added)
         self.status.setText(text)   
 
 

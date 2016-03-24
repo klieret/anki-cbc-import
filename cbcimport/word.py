@@ -59,12 +59,13 @@ class Word(object):
         The list should be sorted in such a way that the most frequent expression comes first."""
         # We use a getter/setter interface here, because this allows form some
         # processing.
+        print("In splitted.")
         delims = [u",", u";", u"、", u"；", u"・"]
-        splitted = split_multiple_delims(self.expression, delims=delims)
+        splitted = split_multiple_delims(unicode(self.expression), delims=delims)
         if self.reverse_splitting:
-            return reversed(splitted)
-        else:
-            return splitted
+            splitted.reverse()
+        print(splitted)
+        return splitted
 
     # ========================= [ Other magic methods] =========================
 

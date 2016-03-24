@@ -6,10 +6,9 @@ def split_multiple_delims(string, delims):
     """ Like the string.split(...) method, but with 
     multiple delimeters.
     See http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters """
-    # if not isinstance(string, str):
-        # return string
+    string = unicode(string)
     for delim in delims:
-        string.replace(delim, delims[0])
+        string = string.replace(delim, delims[0])
     return string.split(delims[0])
 
 

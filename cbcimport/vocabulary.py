@@ -102,6 +102,9 @@ class VocabularyCollection(object):
 
     # ========================= [ Statistics ] =========================
 
+    def full_cursor(self):
+        return self._cursor
+
     def reduced_cursor(self, cursor=None):
         """ Returns the number of queue (!) elements with an index <= than the cursor.
         :param cursor: Int. Defaults to self._cursor. ValueError if out of range.
@@ -111,7 +114,7 @@ class VocabularyCollection(object):
             cursor = self._cursor
         return sum(self.is_in_queue(self._data[i]) for i in range(cursor))
 
-    def count_data(self, bool_fct):
+    def _count_data(self, bool_fct):
         """ Sums over all bool_fct(entry). If bool_fct always returns True/False
         this returns the number of entries with bool_fct(entry) == True.
         :type bool_fct: Function that returns a bool.
@@ -120,19 +123,23 @@ class VocabularyCollection(object):
 
     def len_all(self):
         """ Returns the total number of all elements. """
-        return self.count_data(lambda e: True)
+        return self._count_data(lambda e: True)
 
     def len_added(self):
         """ Returns the number of all elements that were already added. """
-        return self.count_data(lambda e: e.is_added)
+        return self._count_data(lambda e: e.is_added)
 
     def len_dupe(self):
         """ Returns the number of all elements that were classified as duplicates. """
-        return self.count_data(lambda e: e.is_dupe)
+        return self._count_data(lambda e: e.is_dupe)
+
+    def len_black(self):
+        """ Returns the number of all elements that were blacklisted. """
+        return self._count_data(lambda e: e.is_blacklisted)
         
     def len_queue(self):
         """ Returns the number of all elements that are currently in the queue. """
-        return self.count_data(lambda e: self.is_in_queue(e))
+        return self._count_data(lambda e: self.is_in_queue(e))
         # alternative implementation: use self.reduced_cursor
 
     # ========================= [ Return subsets ] =========================
