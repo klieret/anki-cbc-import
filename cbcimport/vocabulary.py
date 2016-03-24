@@ -97,15 +97,6 @@ class VocabularyCollection(object):
                 for i in range(len(fields)):
                     element[field_names[i]] = fields[i]
 
-                # for tangorin:
-                # if word doesn't contain any kanji, then the expression field will be empty 
-                # and you have to take the kana field instead!
-                # todo: Maybe implement that int element.set_fields_hook instead?
-                if "Expression" in field_names and "Kana" in field_names:
-                    logger.debug("Expression from Kana.")
-                    if not element.expression:
-                        element.expression(element["Kana"])
-
                 self._data.append(element)
                 logger.debug("Appended data element.")
 

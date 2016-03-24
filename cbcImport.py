@@ -99,7 +99,9 @@ class CbcImport(object):
         """ Updates note $note with data from $current. """
         # ----------- BEGIN CONFIG -----------
         self.delim = unicode('・', self.encoding)
-        
+
+        # TODO: the actual splitting should also be done in the word object
+        # Fixme: Why should the delimeter be '/'? Not sure if working.
         # TODO splitting as separate method
         def enum(string):
             split = string.split('/')
@@ -112,7 +114,7 @@ class CbcImport(object):
                     out += str(i+1) + ". " + split[i] + '<br>'
             return out.strip()
         
-        note['Expression'] = current.expression
+        note['Expression'] = current.splitted_expression[0]
         note['Meaning'] = enum(current['Meaning'])
         # ----------- END CONFIG -----------
         
