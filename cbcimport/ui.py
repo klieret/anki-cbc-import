@@ -42,6 +42,8 @@ class CbcImportUi(object):
         self.last_added = None  # type: None|bool
 
         # Qt objects:
+        self.frame = None  # type: QFrame
+        self.cbc_box = None  # type: QBoxLayout
         self.buttons = {}  # type: dict[str: QPushButton]
         self.checkboxes = {}  # type: dict[str: QCheckBox]
         self.status = None  # type: QLabel
@@ -275,39 +277,49 @@ class CbcImportUi(object):
 
         # Buttons starting with cbcQ_ are only active if queue is non empty
         # (carefull when changing button name!)
-        self.add_button("cbc_NewInputFile", [self.new_input_file, self.update_enabled],
+        self.add_button("cbc_NewInputFile", [self.new_input_file, self.update_enabled_disabled],
                         text="Choose File", tip="Choose new input file.", size="30x120", )
-        self.add_button("cbc_Load", [self.load, self.update_enabled],
+        self.add_button("cbc_Load", [self.load, self.update_enabled_disabled],
                         text="Load", tip="Load file", size="30x60", )
-        self.add_button("cbcQ_Show", [self.show, self.update_enabled],
+        self.add_button("cbcQ_Show", [self.show, self.update_enabled_disabled],
                         text="Show", tip="Show file", size="30x60", )
-        self.add_button("cbcQ_Reverse", [self.reverse, self.update_enabled],
+        self.add_button("cbcQ_Reverse", [self.reverse, self.update_enabled_disabled],
                         text="Reverse", tip="Reverse Order", size="30x60", )
-        self.add_button("cbcQ_Save", [self.save_button_pushed, self.update_enabled],
+        self.add_button("cbcQ_Save", [self.save_button_pushed, self.update_enabled_disabled],
                         text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
-        self.add_button("cbcQ_First", [self.first, self.update_enabled],
+        self.add_button("cbcQ_First", [self.first, self.update_enabled_disabled],
                         text="<<", tip="Fill in first entry", size="30x50", )
-        self.add_button("cbcQ_Previous", [self.previous, self.update_enabled],
+        self.add_button("cbcQ_Previous", [self.previous, self.update_enabled_disabled],
                         text="<", tip="Fill in previous entry", size="30x50", )
-        self.add_button("cbcQ_Fill", [self.insert, self.update_enabled],
+        self.add_button("cbcQ_Fill", [self.insert, self.update_enabled_disabled],
                         text="X", tip="Fill in form (Ctrl+F)", size="30x50",
                         key="Ctrl+F")
-        self.add_button("cbcQ_Next", [self.next, self.update_enabled],
+        self.add_button("cbcQ_Next", [self.next, self.update_enabled_disabled],
                         text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
                         key="Ctrl+G")
-        self.add_button("cbcQ_Last", [self.last, self.update_enabled],
+        self.add_button("cbcQ_Last", [self.last, self.update_enabled_disabled],
                         text=">>", tip="Fill in last entry", size="30x50", )
 
-        self.add_checkbox("cbcQ_skip_dupe", None, "Skip Dupe")
-        self.add_checkbox("cbcQ_skip_added", None, "Skip Added")
-        self.add_checkbox("cbcQ_skip_black", None, "Skip Black")
-        self.add_checkbox("cbcQ_skip_rest", None, "Skip Rest")
+        self.add_checkbox("cbcQ_skip_dupe", [self.on_checkbox_changed], "Skip Dupe")
+        self.add_checkbox("cbcQ_skip_added", [self.on_checkbox_changed], "Skip Added")
+        self.add_checkbox("cbcQ_skip_black", [self.on_checkbox_changed], "Skip Black")
+        self.add_checkbox("cbcQ_skip_rest", [self.on_checkbox_changed], "Skip Rest")
 
         self.status = QLabel()
         self.update_status()
         self.status_box.addWidget(self.status)
 
-        self.update_enabled()
+        self.update_enabled_disabled()
+        self.on_checkbox_changed()
+
+    def on_checkbox_changed(self):
+        print "on checkbox changed"
+        self.data.dupes_in_queue = not self.checkboxes["cbcQ_skip_dupe"].isChecked()
+        self.data.added_in_queue = not self.checkboxes["cbcQ_skip_added"].isChecked()
+        self.data.blacklisted_in_queue = not self.checkboxes["cbcQ_skip_black"].isChecked()
+        self.data.rest_in_queue = not self.checkboxes["cbcQ_skip_rest"].isChecked()
+        self.update_status()
+        self.update_enabled_disabled()
 
     def add_checkbox(self, name, funcs, text):
         checkbox = QCheckBox()
@@ -316,6 +328,9 @@ class CbcImportUi(object):
         checkbox.adjustSize()
         self.settings_box.addWidget(checkbox)
         self.checkboxes[name] = checkbox
+        for func in funcs:
+            checkbox.connect(checkbox, SIGNAL("clicked(bool)"), func)
+        return checkbox
 
     def add_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
         """ Shortcut to add a new button to self.button_box.
@@ -361,7 +376,7 @@ class CbcImportUi(object):
         self.buttons[name] = button
         return button
 
-    def update_enabled(self):
+    def update_enabled_disabled(self):
         if not self.data.is_queue_empty():
             for buttonName in self.buttons:
                 if buttonName.startswith('cbcQ_'):

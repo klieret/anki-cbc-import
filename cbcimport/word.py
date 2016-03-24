@@ -121,6 +121,10 @@ class Word(object):
             lines.append("{}. {}".format(item_no + 1,  item.strip()))
         return '<br>'.join(lines)
 
+    @property
+    def is_rest(self):
+        return not self.is_added and not self.is_dupe and not self.is_blacklisted
+
     # ========================= [ Other magic methods] =========================
 
     def __str__(self):

@@ -38,6 +38,7 @@ class VocabularyCollection(object):
         self.dupes_in_queue = False  # type: bool
         self.added_in_queue = False  # type: bool
         self.blacklisted_in_queue = False  # type: bool
+        self.rest_in_queue = True  # type: bool
 
         self.scan_for_duplicates = config.getboolean("general", "scan_for_duplicates")  # type: bool
 
@@ -69,6 +70,8 @@ class VocabularyCollection(object):
         if not self.added_in_queue and element.is_added:
             return False
         if not self.blacklisted_in_queue and element.is_blacklisted:
+            return False
+        if not self.rest_in_queue and element.is_rest:
             return False
         return True
 
