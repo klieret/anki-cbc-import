@@ -3,6 +3,16 @@
 
 from typing import Dict
 from .util import split_multiple_delims
+from .log import logger
+
+try:
+    from ignore_dupes.ignore_dupes import expression_dupe
+except ImportError:
+    logger.warning("Couldn't import the ignore_dupes function. Will replace it with a dummy function.")
+
+    # noinspection PyUnusedLocal
+    def expression_dupe(*args, **kwargs):
+        return False
 
 
 class Word(object):
@@ -12,7 +22,8 @@ class Word(object):
     Word[Word.kana_field] if the Kana field is set but the Expression field is not.
     The real Expression field can still be accessed as Word._fields[Word.expression_field].
     As basic fields such as expression, kana, meaning should be accessible without having to
-    use Word[Word.expression_field] etc, they are also defined as properties. """
+    use Word[Word.expression_field] etc, they are also defined as properties and will return
+    empty strings if the field is not set yet."""
     # Note: We use a lot of property decorators in this class, beccause it makes it easier to
     #       switch between internal variables and funtions.
     # ========================= [ Basics ] =========================
@@ -51,6 +62,10 @@ class Word(object):
 
     def keys(self):
         return self._fields.keys()
+
+    def check_duplicate(self):
+        logger.debug(u"Checking for duplicate: {}".format(unicode(self.expression)))
+        self.is_dupe = expression_dupe(self.expression)
 
     @property
     def expression(self):

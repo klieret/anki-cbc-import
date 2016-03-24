@@ -38,6 +38,9 @@ class VocabularyCollection(object):
         self.added_in_queue = False  # type: bool
         self.blacklisted_in_queue = False  # type: bool
 
+        # todo: move to config
+        self.initialize_duplicates = True  # type: bool
+
     def reverse(self):
         """ Reverses the order of all elements.
         Note: This actually reverses self._data and is not just some play on the
@@ -77,7 +80,6 @@ class VocabularyCollection(object):
         :type filename: str
         """
         # todo: should be easily configurable
-        # todo: should be easily overrideable
         logger.debug("Trying to load file '%s'." % filename)
         with open(filename, 'r') as csvfile:
             reader = csv.reader(csvfile, delimiter='\t')
@@ -87,7 +89,6 @@ class VocabularyCollection(object):
     
             for row in reader:
                 fields = [c.decode('utf8').strip() for c in row]
-                logger.debug("Processing fields %s" % fields)
                 element = Word()
                 
                 if not len(fields) == len(field_names):
@@ -97,8 +98,10 @@ class VocabularyCollection(object):
                 for i in range(len(fields)):
                     element[field_names[i]] = fields[i]
 
+                if self.initialize_duplicates:
+                    element.check_duplicate()
+
                 self._data.append(element)
-                logger.debug("Appended data element.")
 
     # ========================= [ Statistics ] =========================
 
@@ -275,7 +278,7 @@ class VocabularyCollection(object):
         """ Is expression $exp already in the queue?
         :type exp: unicode string
         """
-        # todo: make real thing
+        # todo: docstring about how this is used
         if len(exp) >= 3:
             if exp in self.get_current()["Expression"]:
                 return True

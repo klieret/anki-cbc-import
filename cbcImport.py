@@ -13,18 +13,11 @@ from aqt import mw  # main window
 from aqt.addcards import AddCards  # addCards dialog
 from aqt.utils import shortcut, tooltip
 # todo: no *
-from aqt.qt import *
+import os.path
+from aqt.qt import QFileDialog, QHBoxLayout, isMac, QPushButton, QLabel, SIGNAL, QIcon, QKeySequence, QBoxLayout
 from anki.hooks import addHook, runHook, wrap
 from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.log import logger
-
-try:
-    from ignore_dupes.ignore_dupes import expression_dupe
-except ImportError:
-    logger.warning("Couldn't import the ignore_dupes function. Will replace it with a dummy function.")
-
-    def expression_dupe(*args, **kwargs):
-        return False
 
 
 
@@ -117,39 +110,9 @@ class CbcImport(object):
             logger.debug("Loading exception: %s, %s.", Exception, e)
             tooltip(_("Could not open input file %s" % self.import_file), period=1500)
 
-        self.update_duplicates()
         self.data.go_first()
         self.update_status()
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
-
-    # todo: the actual work of this should be moved to data_classes
-    def update_duplicates(self):
-        """ If self.careForDupes==True: updates the duplicate status of all
-        entries in the data. Else: does nothing. 
-        Return value (bool): Was something changed?"""
-
-        logger.debug("Updating duplicates.")
-
-        # todo: implement that in Vocabulary
-        # if not self.care_for_dupes:
-        #     logger.debug("Ignoring all duplicates.")
-        #     return False
-        
-        changes = False
-
-        for i in range(len(self.data._data)):
-            entry = self.data._data[i]
-            logger.debug(u"Checking {}".format(entry.expression))
-            if expression_dupe(entry.expression):
-                if not entry.is_dupe:
-                    changes = True
-                entry.is_dupe = True
-                # write back!
-                self.data._data[i] = entry
-                logger.debug("Marked Entry %s as duplicate." % entry.expression)
-                logger.debug("It's the %dth duplicate." % self.data.len_dupe())
-
-        return changes
 
     def save(self):
         """ Saves self.added and self.rest to the resp. files """
