@@ -17,7 +17,7 @@ from aqt.utils import shortcut, tooltip
 from aqt.qt import *
 from anki.hooks import addHook, runHook, wrap
 from cbcimport.vocabulary import VocabularyCollection
-from cbcimport.util import format_bool_html, split_multiple_delims
+from cbcimport.util import split_multiple_delims
 from cbcimport.log import logger
 
 try:
@@ -295,7 +295,7 @@ class CbcImport(object):
     def first(self):
         """ Inserts first entry. """
         if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"),period=1000)
+            tooltip(_("Queue is empty!"), period=1000)
             return
         self.data.go_first()
         self.insert()
@@ -303,7 +303,7 @@ class CbcImport(object):
     def reverse(self):
         """ Reverses the ordering of the queue. """
         if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"),period=1000)
+            tooltip(_("Queue is empty!"), period=1000)
             return  
         self.data.reverse()
         self.update_status()
@@ -440,7 +440,7 @@ class CbcImport(object):
                 self.buttons[buttonName].setEnabled(not self.data.is_queue_empty())
 
     def update_status(self):
-        """ Updates button texts e.g. to display 
+        """ Updates button texts e.g. to display
         number of remaining entries etc.
         """
         def shorten(string, length=10):
@@ -454,18 +454,38 @@ class CbcImport(object):
             else:
                 return "..." + string[-length:]
 
-        text = "<b>In:</b> \"{inf}\" <b>Cur:</b> {red}/{queue} <b>Idx</b>: {full}/{all} <b>Add:</b> {add} " \
-               "<b>Dup:</b> {dup} <b>Black:</b> {black}| <b>LA:</b> {la}".format(
-                                                               inf=shorten(self.importFile, length=20),
-                                                               red=self.data.reduced_cursor(),
-                                                               queue=self.data.len_queue(),
-                                                               full=self.data.full_cursor(),
-                                                               all=self.data.len_all(),
-                                                               add=self.data.len_added(),
-                                                               dup=self.data.len_dupe(),
-                                                               black=self.data.len_black(),
-                                                               la=self.last_added)
-        self.status.setText(text)   
+        def format_key_value(key, value):
+            return "<b>{}:</b> {}".format(key, red(value))
+
+        def red(string):
+            return '<font color="red">{}</font>'.format(string)
+
+        def format_bool_html(value):
+            if value is False:
+                fcolor = "White"
+                bcolor = "Red"
+            elif value is True:
+                fcolor = "White"
+                bcolor = "Green"
+            else:
+                # no formatting
+                return value
+            return """<span style="background-color: %s; color: %s">%s</span>""" % (bcolor, fcolor, str(value))
+
+        divider = "<big>|</big>"
+        texts = [format_key_value("In", shorten(self.importFile, length=20)),
+                 divider,
+                 format_key_value("Cur", "{}/{}".format(self.data.reduced_cursor(), self.data.len_queue())),
+                 format_key_value("Idx", "{}/{}".format(self.data.full_cursor(), self.data.len_all())),
+                 divider,
+                 format_key_value("Add", self.data.len_added()),
+                 format_key_value("Dup", self.data.len_dupe()),
+                 format_key_value("Black", self.data.len_black()),
+                 divider,
+                 "<b>LA</b>: {}".format(format_bool_html(self.last_added)),
+                 ]
+
+        self.status.setText('&nbsp;&nbsp;'.join(texts))
 
 
 myImport = CbcImport()
