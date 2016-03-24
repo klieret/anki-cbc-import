@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" Defines the class VocabularyCollection which is a collection of instances of the 'Word'
+class. It also implements the 'queue'.
+"""
+
+
 import csv
 from log import logger
 from .util import split_multiple_delims
@@ -11,6 +16,7 @@ from config import config
 __author__ = "ch4noyu"
 __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
+
 
 class VocabularyCollection(object):
     """ A Collection of instances of the 'Word' class.

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" cbcImport -- an interface to add notes to Anki on a
-case by case basis. """
+""" The user interface added to Anki's edit dialogues.
+"""
 
 # future: add check box skip_added skip_dupes, skip_black, skip_normal
 

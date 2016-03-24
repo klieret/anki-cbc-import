@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" Main file. Imports cbcimport.ui and connects it Anki.
+"""
+
 from aqt.addcards import AddCards  # addCards dialog
-from cbcimport.ui import CbcImportUi
 from anki.hooks import addHook, runHook, wrap
+from cbcimport.ui import CbcImportUi
 
 __author__ = "ch4noyu"
 __email__ = "ch4noyu@yahoo.com"

@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" Defines the data class 'Word' that holds one word of vocabulary.
+"""
+
 from typing import Dict
 from .util import split_multiple_delims
 from .log import logger

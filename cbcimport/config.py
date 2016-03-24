@@ -1,13 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import ConfigParser  # renamed to configparser in python3
+""" Reads configuration files. The result is stored in the ConfigParser instance 'logger'.
+Note that importing this module will automatically load the configuration files, so there
+is no need to call load_config by yourself. If you want to reaload the config file, please
+use reload_config(), as load_config is designed check if the configuration files were already
+loaded and if yes, won't do anything.
+"""
+
+import ConfigParser
 import os.path
 from .log import logger
 
 __author__ = "ch4noyu"
 __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
+
+
+# Note: The ConfigParser module was renamed to configparser in python3
+#       and you can't access stuff via ConfigParser[...][...] in python2.
+#       use ConfigParser.get(..., ...) instead.
 
 config = ConfigParser.ConfigParser()
 
