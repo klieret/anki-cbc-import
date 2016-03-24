@@ -16,14 +16,13 @@ from aqt.qt import QFileDialog, QHBoxLayout, isMac, QPushButton, QLabel, SIGNAL,
 from anki.hooks import runHook
 from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.log import logger
+from config import config
 
 
 class CbcImportUi(object):
     def __init__(self):
         """ init and basic configuration """
-        # todo: move config to config object
-        # ----------- BEGIN CONFIG -----------
-        self.default_dir = os.path.expanduser("~/Desktop/")
+        self.default_dir = os.path.expanduser(config["general"]["default_dir"])
         try:
             # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...)
             # last file of all files that are on Desktop and have extension .csv
@@ -37,8 +36,6 @@ class CbcImportUi(object):
         # todo: implement with config
         # todo: use Process module to launch in its own thread
         self.default_editor = "leafpad {filename} &"   # Command to run default editor (include space or switch)
-
-        # ----------- END CONFIG -----------
 
         self.data = VocabularyCollection()
 

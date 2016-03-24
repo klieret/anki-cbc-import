@@ -34,9 +34,9 @@ class Word(object):
 
         # Name of the expression field
         # todo: should be loaded from config file
-        self.expression_field = "Expression"
-        self.meaning_field = "Meaning"
-        self.kana_field = "Kana"
+        self.expression_field = "Expression"  # type: str
+        self.meaning_field = "Meaning"  # type: str
+        self.kana_field = "Kana"  # type: str
 
         # Queue attributes
         self.is_dupe = False  # type: bool

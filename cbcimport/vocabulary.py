@@ -6,6 +6,7 @@ from log import logger
 from .util import split_multiple_delims
 from word import Word
 from typing import List
+from config import config
 
 
 class VocabularyCollection(object):
@@ -38,8 +39,7 @@ class VocabularyCollection(object):
         self.added_in_queue = False  # type: bool
         self.blacklisted_in_queue = False  # type: bool
 
-        # todo: move to config
-        self.initialize_duplicates = True  # type: bool
+        self.scan_for_duplicates = config.getboolean("general", "scan_for_duplicates")  # type: bool
 
     def reverse(self):
         """ Reverses the order of all elements.
@@ -98,7 +98,7 @@ class VocabularyCollection(object):
                 for i in range(len(fields)):
                     element[field_names[i]] = fields[i]
 
-                if self.initialize_duplicates:
+                if self.scan_for_duplicates:
                     element.check_duplicate()
 
                 self._data.append(element)
