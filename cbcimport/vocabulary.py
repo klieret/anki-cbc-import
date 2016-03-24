@@ -264,14 +264,11 @@ class VocabularyCollection(object):
         return self.go_previous(dry=True)
 
     def is_go_next_possible(self):
-        """ Can we go to the next item, or are we already at the end of the
-        queue?
-        """
+        """ Can we go to the next item, or are we already at the end of the queue? """
         return self.go_next(dry=True)
 
     def is_queue_empty(self):
-        """ Is the queue empty?
-        """
+        """ Is the queue empty? """
         return self.len_queue() == 0
 
     def is_expression_in_queue(self, exp):

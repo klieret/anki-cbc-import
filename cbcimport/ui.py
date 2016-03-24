@@ -43,8 +43,9 @@ class CbcImportUi(object):
         # Qt objects:
         self.buttons = {}  # type: dict[str: QPushButton]
         self.status = None  # type: QLabel
-        self.status_icons_box = None  # type: QBoxLayout
-        self.new_icons_box = None  # type: QBoxLayout
+        self.status_box = None  # type: QBoxLayout
+        self.button_box = None  # type: QBoxLayout
+        self.settings_box = None  # type: QBoxLayout
 
     def insert(self):
         """ Inserts an entry from self.queue
@@ -70,7 +71,7 @@ class CbcImportUi(object):
     def clear_all_fields(self):
         """ Resets all fields. """
         for field in mw.col.models.fieldNames(self.e.note.model()):
-            self.e.note[field] = ''
+            self.e.note[field] = ""
         self.e.note.flush()
 
     # Loading/Saving file
@@ -245,57 +246,58 @@ class CbcImportUi(object):
         """
         self.e = editor.editor
         self.mw = editor.mw
+
+        self.button_box = QHBoxLayout()
+        self.status_box = QHBoxLayout()
+        self.settings_box = QHBoxLayout()
+
         # adapted from from /usr/share/anki/aqt/editor.py Lines 350
-        self.new_icons_box = QHBoxLayout()
-        if not isMac:
-            self.new_icons_box.setMargin(6)
-            self.new_icons_box.setSpacing(0)
-        else:
-            self.new_icons_box.setMargin(0)
-            self.new_icons_box.setSpacing(14)
-        self.e.outerLayout.addLayout(self.new_icons_box)
-        # Buttons
+        for box in [self.button_box, self.status_box, self.settings_box]:
+            if not isMac:
+                box.setMargin(6)
+                box.setSpacing(0)
+
+            else:
+                box.setMargin(0)
+                box.setSpacing(14)
+
+        self.e.outerLayout.addLayout(self.button_box)
+        self.e.outerLayout.addLayout(self.status_box)
+        self.e.outerLayout.addLayout(self.settings_box)
+
         # Buttons starting with cbcQ_ are only active if queue is non empty
         # (carefull when changing button name!)
-        self.add_my_button("cbc_NewInputFile", [self.new_input_file, self.update_button_states],
-                           text="Choose File", tip="Choose new input file.", size="30x120", )
-        self.add_my_button("cbc_Load", [self.load, self.update_button_states],
-                           text="Load", tip="Load file", size="30x60", )
-        self.add_my_button("cbcQ_Show", [self.show, self.update_button_states],
-                           text="Show", tip="Show file", size="30x60", )
-        self.add_my_button("cbcQ_Reverse", [self.reverse, self.update_button_states],
-                           text="Reverse", tip="Reverse Order", size="30x60", )
-        self.add_my_button("cbcQ_Save", [self.save_button_pushed, self.update_button_states],
-                           text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
-        self.add_my_button("cbcQ_First", [self.first, self.update_button_states],
-                           text="<<", tip="Fill in first entry", size="30x50", )
-        self.add_my_button("cbcQ_Previous", [self.previous, self.update_button_states],
-                           text="<", tip="Fill in previous entry", size="30x50", )
-        self.add_my_button("cbcQ_Fill", [self.insert, self.update_button_states],
-                           text="X", tip="Fill in form (Ctrl+F)", size="30x50",
-                           key="Ctrl+F")
-        self.add_my_button("cbcQ_Next", [self.next, self.update_button_states],
-                           text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
-                           key="Ctrl+G")
-        self.add_my_button("cbcQ_Last", [self.last, self.update_button_states],
-                           text=">>", tip="Fill in last entry", size="30x50", )
-        # self.updateButtonStates() # maybe tooltips are better...
-        # Status Field
-        self.status_icons_box = QHBoxLayout()
-        if not isMac:
-            self.status_icons_box.setMargin(6)
-            self.status_icons_box.setSpacing(0)
-        else:
-            self.status_icons_box.setMargin(0)
-            self.status_icons_box.setSpacing(14)
-        self.e.outerLayout.addLayout(self.status_icons_box)
+        self.add_button("cbc_NewInputFile", [self.new_input_file, self.update_button_states],
+                        text="Choose File", tip="Choose new input file.", size="30x120", )
+        self.add_button("cbc_Load", [self.load, self.update_button_states],
+                        text="Load", tip="Load file", size="30x60", )
+        self.add_button("cbcQ_Show", [self.show, self.update_button_states],
+                        text="Show", tip="Show file", size="30x60", )
+        self.add_button("cbcQ_Reverse", [self.reverse, self.update_button_states],
+                        text="Reverse", tip="Reverse Order", size="30x60", )
+        self.add_button("cbcQ_Save", [self.save_button_pushed, self.update_button_states],
+                        text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
+        self.add_button("cbcQ_First", [self.first, self.update_button_states],
+                        text="<<", tip="Fill in first entry", size="30x50", )
+        self.add_button("cbcQ_Previous", [self.previous, self.update_button_states],
+                        text="<", tip="Fill in previous entry", size="30x50", )
+        self.add_button("cbcQ_Fill", [self.insert, self.update_button_states],
+                        text="X", tip="Fill in form (Ctrl+F)", size="30x50",
+                        key="Ctrl+F")
+        self.add_button("cbcQ_Next", [self.next, self.update_button_states],
+                        text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
+                        key="Ctrl+G")
+        self.add_button("cbcQ_Last", [self.last, self.update_button_states],
+                        text=">>", tip="Fill in last entry", size="30x50", )
+
         self.status = QLabel()
         self.update_status()
-        self.status_icons_box.addWidget(self.status)
+        self.status_box.addWidget(self.status)
+
         self.update_button_states()
 
-    def add_my_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
-        """ Shortcut to add a new button to self.new_icons_box.
+    def add_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
+        """ Shortcut to add a new button to self.button_box.
         :param name: We do self.buttons[name] = button
         :param funcs: List of functions the button should be connected to.
         :param key: ?
@@ -306,30 +308,37 @@ class CbcImportUi(object):
         :return: button
         """
         # adapted from from /usr/share/anki/aqt/editor.py Lines 308 and following
-        b = QPushButton(text)
+        button = QPushButton(text)
+
         # The Focus should still be on the 'Add' button.
-        b.setAutoDefault(False)
-        b.setDefault(False)
+        button.setAutoDefault(False)
+        button.setDefault(False)
+
         if check:
-            b.setCheckable(True)
+            button.setCheckable(True)
             for func in funcs:
-                b.connect(b, SIGNAL("clicked(bool)"), func)
+                button.connect(button, SIGNAL("clicked(bool)"), func)
         else:
             for func in funcs:
-                b.connect(b, SIGNAL("clicked()"), func)
+                button.connect(button, SIGNAL("clicked()"), func)
+
         if size:
             if size.split('x')[0]:
-                b.setFixedHeight(int(size.split('x')[0]))
-            b.setFixedWidth(int(size.split('x')[1]))
+                button.setFixedHeight(int(size.split('x')[0]))
+            button.setFixedWidth(int(size.split('x')[1]))
+
         if not text:
-            b.setIcon(QIcon(":/icons/%s.png" % name))
+            button.setIcon(QIcon(":/icons/%s.png" % name))
+
         if key:
-            b.setShortcut(QKeySequence(key))
+            button.setShortcut(QKeySequence(key))
+
         if tip:
-            b.setToolTip(shortcut(tip))
-        self.new_icons_box.addWidget(b)
-        self.buttons[name] = b
-        return b
+            button.setToolTip(shortcut(tip))
+
+        self.button_box.addWidget(button)
+        self.buttons[name] = button
+        return button
 
     def update_button_states(self):
         if not self.data.is_queue_empty():
