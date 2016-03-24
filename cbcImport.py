@@ -95,6 +95,10 @@ class CbcImport(object):
         
         self.buttons = {}
 
+        self.status = None
+        self.status_icons_box = None
+        self.new_icons_box = None
+
     def wrap(self, note, current):
         """ Updates note $note with data from $current. """
         # ----------- BEGIN CONFIG -----------
@@ -264,47 +268,26 @@ class CbcImport(object):
     
     def last(self):
         """ Inserts last entry. """
-        if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"), period=1000)
-            return
         self.data.go_last()
         self.insert()
     
     def next(self):
         """ Inserts next entry. """
-        if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"), period=1000)
-            return
-        if not self.data.is_go_next_possible():
-            tooltip(_("Already last item!"), period=1000)
-            return
         self.data.go_next()
         self.insert()
 
     def previous(self):
         """ Inserts previous entry. """
-        if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"), period=1000)
-            return
-        if not self.data.is_go_previous_possible():
-            tooltip(_("Already first item!"), period=1000)
-            return
         self.data.go_previous()
         self.insert()
     
     def first(self):
         """ Inserts first entry. """
-        if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"), period=1000)
-            return
         self.data.go_first()
         self.insert()
     
     def reverse(self):
         """ Reverses the ordering of the queue. """
-        if self.data.is_queue_empty():
-            tooltip(_("Queue is empty!"), period=1000)
-            return  
         self.data.reverse()
         self.update_status()
         
