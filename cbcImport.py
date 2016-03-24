@@ -28,23 +28,14 @@ except ImportError:
     def expression_dupe(*args, **kwargs):
         return False
 
-# todo: duplicates!
-
 # TODO: FIELDS MORE CLEAR (MULTIPLE USED EXPRESSION ETC.)
 # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...) 
-# TODO: keine Checks etc., wenn noch nicht mal mehr Datei geladen.
-# TODO: Button zum entladen von Datein
-# Problem: Curser bleibt stehen, wenn jetzt QUEUE verkürzt wird
-# evtl. curser out of range?
-
-# 1. RESTART ANKI AFTER EACH EDIT (ELSE IT WON'T TAKE EFFECT)
-# 2. NOTE THAT IDENTATION MATTERS IN PYTHON. 
-# 3. DON'T USE SPACES TO INDENT IN THIS FILE.
 
 
 class CbcImport(object):
     def __init__(self):
         """ init and basic configuration """
+        # todo: move config to config object
         # ----------- BEGIN CONFIG -----------   
         # file to import (change the "..." part)
         # self.importFile=os.path.expanduser("~/Desktop/tangorin_38567.csv")
@@ -91,13 +82,12 @@ class CbcImport(object):
         self.mw = None    # instance of main window
         
         # was last Card added to self.added?
-        self.last_added = None
+        self.last_added = None  # type: None|bool
         
-        self.buttons = {}
-
-        self.status = None
-        self.status_icons_box = None
-        self.new_icons_box = None
+        self.buttons = {}  # type: dict[str: QPushButton]
+        self.status = None  # type: QLabel
+        self.status_icons_box = None  # type: QBoxLayout
+        self.new_icons_box = None  # type: QBoxLayout
 
     def wrap(self, note, current):
         """ Updates note $note with data from $current. """
@@ -155,7 +145,7 @@ class CbcImport(object):
 
     def new_input_file(self):
         filters = "csv Files (*.csv);;All Files (*)"
-        import_file = QFileDialog.getSaveFileName(None, "Pick a file to import.",
+        import_file = QFileDialog.getSaveFileName(QFileDialog(), "Pick a file to import.",
                                                   self.defaultDir, filters, options=QFileDialog.DontConfirmOverwrite)
         if import_file:
             self.importFile = import_file
@@ -195,25 +185,19 @@ class CbcImport(object):
             return False
         
         changes = False
-        
+
         for i in range(len(self.data._data)):
             entry = self.data._data[i]
-            delims = [',', ';', '・'.decode('utf-8')]
-            # todo: not elegant to have to use entry["Expression"] and entry.expression for different purposes
-            exps = split_multiple_delims(entry["Expression"], delims)
-            # if any of the partial expressions is a duplicate
-            # we mark the whole db entry as a duplicate!
-            for exp in exps:
-                if expression_dupe(exp):
-                    if not entry.is_dupe:
-                        changes = True
-                    entry.is_dupe = True
-                    # write back!
-                    self.data._data[i] = entry
-                    logger.debug("Marked Entry %s as duplicate." % entry.expression)
-                    logger.debug("It's the %dth duplicate." % self.data.len_dupe())
-                    break
-        
+            logger.debug(u"Checking {}".format(entry.expression))
+            if expression_dupe(entry.expression):
+                if not entry.is_dupe:
+                    changes = True
+                entry.is_dupe = True
+                # write back!
+                self.data._data[i] = entry
+                logger.debug("Marked Entry %s as duplicate." % entry.expression)
+                logger.debug("It's the %dth duplicate." % self.data.len_dupe())
+
         return changes
 
     def save(self):
@@ -342,11 +326,10 @@ class CbcImport(object):
     # Setup Menu
     # ----------------------------------------
 
-    # todo: declare self.<variable>s in __init__
-    def setup_my_menu(self, AddCardsObj):
+    def setup_my_menu(self, add_cards_dialogue):
         """ Creates the line of buttons etc. to control this addon. """
-        self.e = AddCardsObj.editor
-        self.mw = AddCardsObj.mw
+        self.e = add_cards_dialogue.editor
+        self.mw = add_cards_dialogue.mw
         # adapted from from /usr/share/anki/aqt/editor.py Lines 350
         self.new_icons_box = QHBoxLayout()
         if not isMac:
@@ -396,7 +379,6 @@ class CbcImport(object):
         self.status_icons_box.addWidget(self.status)
         self.update_button_states()
 
-    # todo: add docstring
     def add_my_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
         """ Shortcut to add a new button to self.new_icons_box.
         :param name: We do self.buttons[name] = button
