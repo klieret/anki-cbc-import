@@ -13,7 +13,10 @@ from aqt import mw  # main window
 from aqt.utils import shortcut, tooltip
 import os.path
 from aqt.qt import QFileDialog, QHBoxLayout, isMac, QPushButton, QLabel, SIGNAL, QIcon, QKeySequence, QBoxLayout, \
-    QCheckBox, QSpacerItem, QVBoxLayout, QFrame
+    QCheckBox, QVBoxLayout, QFrame
+
+import aqt
+
 from anki.hooks import runHook
 from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.log import logger
@@ -24,6 +27,10 @@ class CbcImportUi(object):
     def __init__(self):
         """ init and basic configuration """
         self.default_dir = os.path.expanduser(config.get("general", "default_dir"))
+
+        # will be set in self.on_editor_opened (since we might want to get the content
+        # self.default_dir to choose default_pics, and the content might have changed after
+        # anki was started.
         self.import_file = None  # type: str
         self.added_file = None  # type: str
         self.rest_file = None  # type: str
@@ -109,12 +116,11 @@ class CbcImportUi(object):
         self.update_status()
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
 
+    # noinspection PyMethodMayBeStatic
     def save(self):
         """ Saves self.added and self.rest to the resp. files """
         pass
-
-        # todo
-
+        # todo: Implement
         # if self.added_file and (self.createEmptyFiles or len(self.added)>0):
         #     try:
         #         with open(self.added_file,'wb') as csvfile:
@@ -138,6 +144,7 @@ class CbcImportUi(object):
     def save_button_pushed(self):
         """ What happens if save button is pushed:
         Show tooltip and save."""
+        # todo: Implement
         self.save()
         # # tooltip
         # text=""
@@ -258,8 +265,11 @@ class CbcImportUi(object):
         self.e.outerLayout.addWidget(self.frame)
 
         self.button_box = QHBoxLayout()
+        self.button_box.setAlignment(aqt.qt.Qt.AlignCenter)
         self.status_box = QHBoxLayout()
+        self.status_box.setAlignment(aqt.qt.Qt.AlignCenter)
         self.settings_box = QHBoxLayout()
+        self.settings_box.setAlignment(aqt.qt.Qt.AlignCenter)
 
         # adapted from from /usr/share/anki/aqt/editor.py Lines 350
         for box in [self.cbc_box]:
@@ -377,10 +387,13 @@ class CbcImportUi(object):
         return button
 
     def update_enabled_disabled(self):
+        # note the difference between VocabularyCollection.queue_empty()
+        # and VocabularyCollection.empty()
         if not self.data.is_queue_empty():
             for buttonName in self.buttons:
                 if buttonName.startswith('cbcQ_'):
                     self.buttons[buttonName].setEnabled(True)
+        if not self.data.is_empty():
             for checkboxName in self.checkboxes:
                 if checkboxName.startswith('cbcQ_'):
                     self.checkboxes[checkboxName].setEnabled(True)
@@ -388,10 +401,13 @@ class CbcImportUi(object):
         self.buttons["cbcQ_Last"].setEnabled(self.data.is_go_next_possible())
         self.buttons["cbcQ_Previous"].setEnabled(self.data.is_go_previous_possible())
         self.buttons["cbcQ_First"].setEnabled(self.data.is_go_previous_possible())
+        # note the difference between VocabularyCollection.queue_empty()
+        # and VocabularyCollection.empty()
         if self.data.is_queue_empty():
             for buttonName in self.buttons:
                 if buttonName.startswith('cbcQ_'):
                     self.buttons[buttonName].setEnabled(False)
+        if self.data.is_empty():
             for checkboxName in self.checkboxes:
                 if checkboxName.startswith('cbcQ_'):
                     self.checkboxes[checkboxName].setEnabled(False)
