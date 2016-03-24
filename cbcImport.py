@@ -5,6 +5,10 @@ from aqt.addcards import AddCards  # addCards dialog
 from cbcimport.ui import CbcImportUi
 from anki.hooks import addHook, runHook, wrap
 
+__author__ = "ch4noyu"
+__email__ = "ch4noyu@yahoo.com"
+__license__ = "AGPLv3"
+
 myImport = CbcImportUi()
 
 # generate new hooks

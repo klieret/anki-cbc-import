@@ -14,13 +14,15 @@ from aqt.utils import shortcut, tooltip
 import os.path
 from aqt.qt import QFileDialog, QHBoxLayout, isMac, QPushButton, QLabel, SIGNAL, QIcon, QKeySequence, QBoxLayout, \
     QCheckBox, QVBoxLayout, QFrame
-
 import aqt
-
 from anki.hooks import runHook
 from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.log import logger
 from config import config
+
+__author__ = "ch4noyu"
+__email__ = "ch4noyu@yahoo.com"
+__license__ = "LGPLv3"
 
 
 class CbcImportUi(object):

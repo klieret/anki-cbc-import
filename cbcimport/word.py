@@ -14,6 +14,10 @@ except ImportError:
     def expression_dupe(*args, **kwargs):
         return False
 
+__author__ = "ch4noyu"
+__email__ = "ch4noyu@yahoo.com"
+__license__ = "LGPLv3"
+
 
 class Word(object):
     """ Contains information about one word of vocabulary.

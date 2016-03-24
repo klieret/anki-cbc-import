@@ -5,6 +5,10 @@ import ConfigParser  # renamed to configparser in python3
 import os.path
 from .log import logger
 
+__author__ = "ch4noyu"
+__email__ = "ch4noyu@yahoo.com"
+__license__ = "LGPLv3"
+
 config = ConfigParser.ConfigParser()
 
 _config_files = [os.path.join(os.path.dirname(__file__), "config/default.config")]

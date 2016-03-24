@@ -8,6 +8,9 @@ from word import Word
 from typing import List
 from config import config
 
+__author__ = "ch4noyu"
+__email__ = "ch4noyu@yahoo.com"
+__license__ = "LGPLv3"
 
 class VocabularyCollection(object):
     """ A Collection of instances of the 'Word' class.

@@ -5,6 +5,10 @@ import logging
 import os.path
 import sys
 
+__author__ = "ch4noyu"
+__email__ = "ch4noyu@yahoo.com"
+__license__ = "LGPLv3"
+
 logger = logging.getLogger('main_logger')
 logger.setLevel(logging.DEBUG)
 
@@ -14,7 +18,7 @@ sh_info = logging.StreamHandler(stream=sys.stdout)
 sh_info.setLevel(logging.DEBUG)
 sh_info.setFormatter(formatter)
 
-# will be caught by anki and displayed in a 
+# will be caught by anki and displayed in a
 # pop-up window
 sh_error = logging.StreamHandler(stream=sys.stderr)
 sh_error.setLevel(logging.ERROR)
