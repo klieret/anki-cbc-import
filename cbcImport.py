@@ -9,11 +9,11 @@ myImport = CbcImportUi()
 
 # generate new hooks
 AddCards.addHistory = wrap(AddCards.addHistory, lambda *args: runHook("addHistory", *args))
-AddCards.setupEditor = wrap(AddCards.setupEditor, lambda add_cards_obj: runHook("addEditorSetup", add_cards_obj))
-AddCards.addCards = wrap(AddCards.addCards, lambda add_cards_obj: runHook("tooltip", add_cards_obj))
+AddCards.setupEditor = wrap(AddCards.setupEditor, lambda editor: runHook("setupEditor", editor))
+AddCards.addCards = wrap(AddCards.addCards, lambda add_cards_obj: runHook("addCards", add_cards_obj))
 
 # add functions to those hooks
-addHook("addEditorSetup", myImport.setup_my_menu)
+addHook("setupEditor", myImport.on_editor_opened)
 addHook("unloadProfile", myImport.save)
-addHook("tooltip", myImport.added_tooltip)
-addHook("addHistory", myImport.card_added)
+addHook("addCards", myImport.on_cards_added)
+addHook("addHistory", myImport.on_add_history)

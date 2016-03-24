@@ -22,21 +22,16 @@ from config import config
 class CbcImportUi(object):
     def __init__(self):
         """ init and basic configuration """
-        self.default_dir = os.path.expanduser(config["general"]["default_dir"])
-        try:
-            # TODO: Laden von Dateinamen an Bauen von Menu koppeln, nicht einfach an Init (da nur bei Start von Anki ausgeführt...)
-            # last file of all files that are on Desktop and have extension .csv
-            self.import_file = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1]
-        except IndexError:
-            self.import_file = None
-        # todo: are we still gonna support that
-        self.added_file = None
-        self.rest_file = os.path.expanduser('~/Desktop/rest.csv')
+        self.default_dir = os.path.expanduser(config.get("general", "default_dir"))
+        self.import_file = None  # type: str
+        self.added_file = None  # type: str
+        self.rest_file = None  # type: str
 
         # todo: implement with config
         # todo: use Process module to launch in its own thread
         self.default_editor = "leafpad {filename} &"   # Command to run default editor (include space or switch)
 
+        # Note that nothing is added yet.
         self.data = VocabularyCollection()
 
         self.e = None     # instance of the Editor window
@@ -45,6 +40,7 @@ class CbcImportUi(object):
         # was last Card added to self.added?
         self.last_added = None  # type: None|bool
 
+        # Qt objects:
         self.buttons = {}  # type: dict[str: QPushButton]
         self.status = None  # type: QLabel
         self.status_icons_box = None  # type: QBoxLayout
@@ -200,7 +196,7 @@ class CbcImportUi(object):
         self.e.loadNote()
 
     # noinspection PyUnusedLocal
-    def card_added(self, obj, note):
+    def on_add_history(self, obj, note):
         """ This function gets called once a card is added and
         is needed to update self.added (list of added cards).
         :param obj: ? (we need this since this is called via hook)
@@ -220,7 +216,7 @@ class CbcImportUi(object):
         self.update_status()
 
     # noinspection PyUnusedLocal
-    def added_tooltip(self, *args):
+    def on_cards_added(self, *args):
         """ Has to be called separately to overwrite native 'Added' tooltip.
         """
         if self.last_added:
@@ -228,15 +224,27 @@ class CbcImportUi(object):
         else:
             tooltip(_("NOT ADDED TO ADDED!"), period=1000)
 
-    # Setup Menu
-    # ----------------------------------------
-
-    def setup_my_menu(self, add_cards_dialogue):
-        """ Creates the line of buttons etc. to control this addon.
-        :param add_cards_dialogue
+    def on_editor_opened(self, editor):
+        """ Gets called when the user opens the edit dialog.
+        :param editor: The edit dialog.
         """
-        self.e = add_cards_dialogue.editor
-        self.mw = add_cards_dialogue.mw
+        # We do the setup of the links for the files here because else we wouldn't
+        # find files that have been added after Anki has been started.
+        try:
+            # last file of all files that are on Desktop and have extension .csv
+            self.import_file = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1]
+        except IndexError:
+            self.import_file = None
+        self.rest_file = os.path.expanduser('~/Desktop/rest.csv')
+
+        self.setup_my_menu(editor)
+
+    def setup_my_menu(self, editor):
+        """ Creates the line of buttons etc. to control this addon.
+        :param editor
+        """
+        self.e = editor.editor
+        self.mw = editor.mw
         # adapted from from /usr/share/anki/aqt/editor.py Lines 350
         self.new_icons_box = QHBoxLayout()
         if not isMac:

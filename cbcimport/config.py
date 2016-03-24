@@ -7,7 +7,7 @@ from .log import logger
 
 config = ConfigParser.ConfigParser()
 
-_config_files = ["cbcimport/config/default.config"]
+_config_files = [os.path.join(os.path.dirname(__file__), "config/default.config")]
 _loaded = False  # were the _config_files at least loaded once
 
 
@@ -16,11 +16,13 @@ def _load_config(quiet=True):
     :param quiet: Write out logging messages?
     :return: None
     """
-    logger.info("Loading configuration from the following file(s): %s." % ', '.join(_config_files))
+    logger.info("Loading configuration from the following file(s): %s." %
+                ', '.join([os.path.abspath(f) for f in _config_files]))
     for cfile in _config_files:
         if not os.path.exists(cfile):
             if not quiet:
                 logger.warning("Couldn't find config file {}".format(os.path.abspath(cfile)))
+        else:
             config.read(cfile)
     global _loaded
     _loaded = True
