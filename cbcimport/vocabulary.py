@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" Defines two classes:
-- DataElement (contains all information about one word of vocabulary)
-- DataSet (a class that bundles all DataElements)
-"""
-
 import csv
 from log import logger
 from .util import split_multiple_delims
@@ -14,19 +9,39 @@ from typing import List
 
 
 class VocabularyCollection(object):
-    """ Collects DataElements instances. """
+    """ A Collection of instances of the 'Word' class.
+    * Most important term: 'queue': When the user clicks the <<, <, >, >> buttons, i.e. wants
+      to move from one entry (Word instance) to another, he might want to skip the entries that
+      were duplicates, were blacklisted or were already added. Thus this implements something
+      lik a queue that skips those entries if configured to do so.
+      However this is not implemented as a list VocabularyCollection.queue, but rather we define
+      functions to go through the whole dataset VocabularyCollection._data (of type List[Word]
+      and mimic such a behaviour.
+    * Calling functions like VocabularyCollection.next, previous etc. changes VocabularyCollection._cursor,
+      the entry at the cursor can then be retrieved with VocabularyCollection.get_current.
+    * Note that to check if an element is a duplicate, blacklisted etc., the method of the element
+      i.e. of the Word class is used, whereas to check if its in the queue, we use
+      VocabularyCollection.is_in_queue (this allows to customize which elements are being skipped
+      in the queue)."""
+    
+    # ========================= [ Basics ] =========================
+    
     def __init__(self):
         self._data = []  # type: List[Word]
     
         # The index of the data element which is to be/was
-        # imported to Anki.
+        # imported to Anki, i.e. the element we are 'looking at' right now.
         self._cursor = 0  # type: int
+
+        # Which entries should be skipped in the 'queue'.
         self.dupes_in_queue = False  # type: bool
         self.added_in_queue = False  # type: bool
         self.blacklisted_in_queue = False  # type: bool
 
     def reverse(self):
-        """ Reverses the order of all elements. """
+        """ Reverses the order of all elements.
+        Note: This actually reverses self._data and is not just some play on the
+        behaviour on the VocabularyCollection.next, previous, etc. functions. """
         self._data.reverse()
         self._cursor = len(self._data) - 1 - self._cursor
 
@@ -41,9 +56,10 @@ class VocabularyCollection(object):
         self._data[self._cursor] = elem 
 
     def is_in_queue(self, element):
-        """
+        """ This basically implements the 'queue'. Depending on the settings,
+        skips duplicate, already added and blacklisted words.
         :type element: Word
-        :return:
+        :return:True if element is in queue, False otherwise.
         """
         if not self.dupes_in_queue and element.is_dupe:
             return False
@@ -53,6 +69,8 @@ class VocabularyCollection(object):
             return False
         return True
 
+    # ========================= [ Load ] =========================
+
     # todo: maybe make that a function that generates a VocabularyCollection object instead of a method
     def load(self, filename):
         """ Loads input file to self._data.
@@ -61,7 +79,7 @@ class VocabularyCollection(object):
         # todo: should be easily configurable
         # todo: should be easily overrideable
         logger.debug("Trying to load file '%s'." % filename)
-        with open(filename,'r') as csvfile:
+        with open(filename, 'r') as csvfile:
             reader = csv.reader(csvfile, delimiter='\t')
             
             # must match Anki fieldnames. If you want to ignore a field, just set it to ""
@@ -91,29 +109,26 @@ class VocabularyCollection(object):
                 self._data.append(element)
                 logger.debug("Appended data element.")
 
-    # =============== [ Statistics ] ===============
+    # ========================= [ Statistics ] =========================
 
-    def reduced_cursor(self):
+    def reduced_cursor(self, cursor=None):
         """ Returns the number of queue (!) elements with an index <= than the cursor.
+        :param cursor: Int. Defaults to self._cursor. ValueError if out of range.
+        :type cursor: int
         """
-        ans = 0
-        for i in range(self._cursor):
-            if self.is_in_queue(self._data[i]):
-                ans += 1
-        return ans
+        if cursor is None:
+            cursor = self._cursor
+        return sum(self.is_in_queue(self._data[i]) for i in range(cursor))
 
-    def count_data(self, boolean):
-        """ Count all data entries with boolean(entry) == True
-        :type boolean: fct
+    def count_data(self, bool_fct):
+        """ Sums over all bool_fct(entry). If bool_fct always returns True/False
+        this returns the number of entries with bool_fct(entry) == True.
+        :type bool_fct: Function that returns a bool.
         """
-        i = 0
-        for entry in self._data:
-            if boolean(entry):
-                i += 1
-        return i
+        return sum(bool_fct(entry) for entry in self._data)
 
     def len_all(self):
-        """ Returns the number of all elements. """
+        """ Returns the total number of all elements. """
         return self.count_data(lambda e: True)
 
     def len_added(self):
@@ -126,20 +141,16 @@ class VocabularyCollection(object):
         
     def len_queue(self):
         """ Returns the number of all elements that are currently in the queue. """
-        return self.count_data(lambda e: e.is_expression_in_queue)
+        return self.count_data(lambda e: self.is_in_queue(e))
+        # alternative implementation: use self.reduced_cursor
 
-    # =============== [ Return subsets ] ===============
+    # ========================= [ Return subsets ] =========================
 
-    def get(self, boolean):
-        """ Returns list with all elements with boolean(element) == True.
-        :type boolean: Callable
+    def get(self, boolean_fct):
+        """ Returns list with all elements with boolean_fct(element) == True.
+        :type boolean_fct: Callable
         """
-        ret = []
-        for entry in self._data:
-            if boolean(entry):
-                ret.append(entry)
-        return ret
-
+        return [entry for entry in self._data if boolean_fct(entry)]
 
     def get_all(self):
         """ Returns list of all elements. """
@@ -155,32 +166,34 @@ class VocabularyCollection(object):
         
     def get_queue(self):
         """ Returns list of all elements that are currently in the queue. """
-        return self.get(lambda e: e.is_expression_in_queue)
+        return self.get(lambda e: self.is_in_queue(e))
 
-    # =============== [ Navigate ] ===============
+    # ========================= [ Navigation ] =========================
 
-    # todo: should rather return the opposite!
-    def go(self, func, start=None, dry=False, quiet=False):
+    def go(self, func, start=None, dry=False, quiet=True):
         """ Updates self._cursor. 
-        Starts with cursor = $start (default: func(self.cursor))
-        and repeatedly calls cursor = func(cursor).
-        Once the element at the cursor is an element that should be in
-        the queue, we set self._cursor = cursor.
-        Returns True if self._cursor remains unchanged and False otherwise.
+        Starts with cursor = $start (default: func(self.cursor)) and repeatedly calls
+        cursor = func(cursor).
+        Once the element at the cursor is an element in the queue, we set self._cursor = cursor.
+        Returns False if self._cursor remains unchanged and True otherwise.
         If dry == True, self._cursor remains untouched, and only the
-        return value is given.
+        return value is given (Useful if we want to test if we are at the
+        end of the queue etc.)
         :type func: function
         :type start: int
         :type dry: bool
+        :param quiet: Set to False for debugging.
         :type quiet: bool"""
-        
-        if not dry:
-            print("Manipulating cursor.")
+
+        def qprint(string):
+            if not quiet:
+                print string
+            else:
+                return
 
         old_cursor = self._cursor
         new_cursor = self._cursor
-
-        print("old_cursor = new_cursor = {}".format(self._cursor))
+        qprint("old_cursor = {}".format(self._cursor))
 
         if start is None:
             # do NOT use "if not start", because start = 0 gets 
@@ -188,27 +201,24 @@ class VocabularyCollection(object):
             start = func(self._cursor)
         
         cursor = start
-        print("start cursor = {}".format(start))
+        qprint("start cursor = {}".format(start))
 
         while cursor in range(len(self._data)):
-            print("trying cursor {}".format(cursor))
+            qprint("trying cursor {}".format(cursor))
             if self.is_in_queue(self._data[cursor]):
                 new_cursor = cursor
-                print("In queue. Break!")
+                qprint("In queue. Break!")
                 break 
             else:
-                if not quiet:
-                    print("Skipping element %d" % cursor)
+                qprint("Skipping.")
                 cursor = func(cursor)
         
         if not dry:
             self._cursor = new_cursor
+            qprint("Cursor is now %d" % self._cursor)
+            qprint("Reduced cursor is now %d" % self.reduced_cursor())
 
-        if not dry and not quiet:
-            print("Cursor is now %d" % self._cursor)
-            print("Reduced cursor is now %d" % self.reduced_cursor())
-
-        return new_cursor == old_cursor
+        return new_cursor != old_cursor
 
     def go_next(self, dry=False):
         """ Go to next queue element 
@@ -244,24 +254,22 @@ class VocabularyCollection(object):
         """
         return self.go(lambda x: x-1, start=len(self._data)-1)
 
-    # =============== [ Booleans ] ===============
+    # ========================= [ Booleans ] =========================
 
     def is_go_previous_possible(self):
         """ Can we go to the previous item, or are we already at the end of the
         queue?
         """
-        return not self.go_previous(dry=True)
+        return self.go_previous(dry=True)
 
     def is_go_next_possible(self):
         """ Can we go to the next item, or are we already at the end of the
         queue?
         """
-        return not self.go_next(dry=True)
+        return self.go_next(dry=True)
 
-    # todo: is this what we want?
     def is_queue_empty(self):
-        """ Is the queue empty? Note: This also counts duplicates or already
-        added elements, i.e. returns False if one of those is present in the queue.
+        """ Is the queue empty?
         """
         return self.len_queue() == 0
 
