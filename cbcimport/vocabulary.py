@@ -100,9 +100,10 @@ class VocabularyCollection(object):
             field_names = ["Expression", "Kana", "Meaning", None]
     
             for row in reader:
-                fields = [c.decode('utf8').strip() for c in row]
                 element = Word()
-                
+                element.line = '\t'.join(row)
+                fields = [c.decode('utf8').strip() for c in row]
+
                 if not len(fields) == len(field_names):
                     raise (ValueError, "The number of supplied field_names (%d) doesn't match the number of "
                                        "fields in the file %s (%d)." % (len(field_names), filename, len(fields)))
@@ -160,10 +161,10 @@ class VocabularyCollection(object):
     # ========================= [ Return subsets ] =========================
 
     def get(self, boolean_fct):
-        """ Returns list with all elements with boolean_fct(element) == True.
+        """ Returns iterator with all elements with boolean_fct(element) == True.
         :type boolean_fct: Callable
         """
-        return [entry for entry in self._data if boolean_fct(entry)]
+        return (entry for entry in self._data if boolean_fct(entry))
 
     def get_all(self):
         """ Returns list of all elements. """
@@ -173,13 +174,21 @@ class VocabularyCollection(object):
         """ Returns list of all elements that were already added. """
         return self.get(lambda e: e.is_added)
 
-    def get_dupe(self):
+    def get_dupes(self):
         """ Returns list of all elements that were classified as duplicates. """
         return self.get(lambda e: e.is_dupe)
-        
+
+    def get_blacklisted(self):
+        """ Returns list of all elements that were blacklisted. """
+        return self.get(lambda e: e.is_blacklisted)
+
     def get_queue(self):
         """ Returns list of all elements that are currently in the queue. """
         return self.get(lambda e: self.is_in_queue(e))
+
+    def get_rest(self):
+        """ Returns list of all elements that have not been added. """
+        return self.get(lambda e: not e.is_added)
 
     # ========================= [ Navigation ] =========================
 

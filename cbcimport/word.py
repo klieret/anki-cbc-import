@@ -39,6 +39,7 @@ class Word(object):
     def __init__(self):
         # The fields that are to be synchronized with the anki note:
         self._fields = {}  # type: Dict[str, str]
+        self.line = ""
 
         # Name of the expression field
         # todo: should be loaded from config file

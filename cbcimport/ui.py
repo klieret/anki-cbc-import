@@ -34,9 +34,10 @@ class CbcImportUi(object):
         # will be set in self.on_editor_opened (since we might want to get the content
         # self.default_dir to choose default_pics, and the content might have changed after
         # anki was started.
-        self.import_file = None  # type: str
-        self.added_file = None  # type: str
-        self.rest_file = None  # type: str
+        self.filename_import = ""  # type: str
+        self.filename_added = ""  # type: str
+        self.filename_rest = ""  # type: str
+        self.filename_black = ""  # type: str
 
         # todo: implement with config
         # todo: use Process module to launch in its own thread
@@ -51,7 +52,6 @@ class CbcImportUi(object):
         # was last Card added to self.added?
         self.last_added = None  # type: None|bool
 
-        # todo: set default values from config
         self.hiding = False  # type: bool
 
         # Qt objects:
@@ -98,50 +98,39 @@ class CbcImportUi(object):
         self.data = VocabularyCollection()
 
         logger.debug("Loading file. ")
-        if not self.import_file:
+        if not self.filename_import:
             logger.warning("No import file was specified.")
             tooltip(_("No import file specified"), period=1500)
             return False
 
         try:
-            self.data.load(self.import_file)
+            self.data.load(self.filename_import)
         except Exception, e:
             logger.debug("Loading exception: %s, %s.", Exception, e)
-            tooltip(_("Could not open input file %s" % self.import_file), period=1500)
+            tooltip(_("Could not open input file %s" % self.filename_import), period=1500)
 
         self.data.go_first()
         self.update_status()
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
 
+    # cleanup: move to vocabulary class?
     # noinspection PyMethodMayBeStatic
     def save(self):
         """ Saves self.added and self.rest to the resp. files """
-        pass
-        # todo: Implement
-        # if self.added_file and (self.createEmptyFiles or len(self.added)>0):
-        #     try:
-        #         with open(self.added_file,'wb') as csvfile:
-        #             writer=csv.writer(csvfile, delimiter=self.delim)
-        #             for row in self.added:
-        #                 row=[c.encode(self.encoding) for c in row]
-        #                 writer.writerow(row)
-        #     except:
-        #         tooltip(_("Could not open output file %s" % self.added_file),period=1500)
-
-        # if self.rest_file and (self.createEmptyFiles or len(self.rest)>0):
-        #     try:
-        #         with open(self.rest_file,'wb') as csvfile:
-        #             writer=csv.writer(csvfile, delimiter=self.delim)
-        #             for row in self.rest:
-        #                 row=[c.encode(self.encoding) for c in row]
-        #                 writer.writerow(row)
-        #     except:
-        #         tooltip(_("Could not open output file %s" % self.rest_file),period=1500)
+        with open(self.filename_added, 'wb') as file_:
+            for item in self.data.get_added():
+                file_.write(item.line + "\n")
+        with open(self.filename_rest, 'wb') as file_:
+            for item in self.data.get_rest():
+                file_.write(item.line + "\n")
+        with open(self.filename_black, 'wb') as file_:
+            for item in self.data.get_blacklisted():
+                file_.write(item.line + "\n")
 
     def show(self):
         """ Opens input file in an external editor. """
-        if self.import_file.strip():
-            os.system(self.default_editor.format(filename=self.import_file))
+        if self.filename_import.strip():
+            os.system(self.default_editor.format(filename=self.filename_import))
         else:
             tooltip(_("No input File!"), period=1500)
 
@@ -184,23 +173,14 @@ class CbcImportUi(object):
         import_file = QFileDialog.getSaveFileName(QFileDialog(), "Pick a file to import.",
                                                   self.default_dir, filters, options=QFileDialog.DontConfirmOverwrite)
         if import_file:
-            self.import_file = import_file
-        self.update_status()
+            self.filename_import = import_file
+            self.update_filenames()
         return bool(import_file)
 
-    def on_save_button_clicked(self):
+    def on_button_save_clicked(self):
         """ What happens if save button is pushed: Show tooltip and save."""
-        # todo: Implement
         self.save()
-        # # tooltip
-        # text=""
-        # if self.added_file:
-        #     text+="Saved added "
-        # if self.rest_file:
-        #     text+="Saved rest"
-        # if text=="":
-        #     text+="NO FILE TO SAVE"
-        # tooltip(_(text), period=1500)
+        tooltip(_("Saved!"), period=1500)
 
     def on_show_hide_button_clicked(self):
         self.hiding = not self.hiding
@@ -273,10 +253,10 @@ class CbcImportUi(object):
         # find files that have been added after Anki has been started.
         try:
             # last file of all files that are on Desktop and have extension .csv
-            self.import_file = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1]
+            self.filename_import = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1]
         except IndexError:
-            self.import_file = None
-        self.rest_file = os.path.expanduser('~/Desktop/rest.csv')
+            self.filename_import = None
+        self.filename_rest = os.path.expanduser('~/Desktop/rest.csv')
 
         self.setup_my_menu(editor)
 
@@ -326,7 +306,7 @@ class CbcImportUi(object):
                                 text=u"Show", tip="Show file", size="30x60", )
         self.add_toolbar_button("cbcQ_Reverse", [self.on_button_reverse_clicked, self.update_enabled_disabled],
                                 text=u"Reverse ⇄", tip="Reverse Order", size="30x90", )
-        self.add_toolbar_button("cbcQ_Save", [self.on_save_button_clicked, self.update_enabled_disabled],
+        self.add_toolbar_button("cbcQ_Save", [self.on_button_save_clicked, self.update_enabled_disabled],
                                 text=u"Save", tip="Saves all added resp. all remaining notes to two files.",
                                 size="30x60")
 
@@ -448,6 +428,21 @@ class CbcImportUi(object):
 
     # ========================= [ Update the GUI ] =========================
 
+    def update_filenames(self):
+        if not os.path.exists(self.filename_import):
+            logger.warning("Import file {} does not exist.".format(os.path.abspath(self.filename_import)))
+            self.filename_added = ""
+            self.filename_rest = ""
+            self.filename_black = ""
+            self.update_status()
+            return
+        dirname = os.path.dirname(self.filename_import)
+        basename, ext = os.path.splitext(os.path.basename(self.filename_import))
+        self.filename_added = os.path.join(dirname, "{}_added{}".format(basename, ext))
+        self.filename_rest = os.path.join(dirname, "{}_rest{}".format(basename, ext))
+        self.filename_black = os.path.join(dirname, "{}_black{}".format(basename, ext))
+        self.update_status()
+
     def update_enabled_disabled(self):
         """ Enables/Disables buttons/checkboxes based on the state of the addon """
         # note the difference between VocabularyCollection.queue_empty()
@@ -477,6 +472,8 @@ class CbcImportUi(object):
 
     def update_status(self):
         """ Updates the status label to display number of remaining entries etc. """
+
+        # future: make single labels so that we can make them clickable etc.
 
         def shorten(string, length=10):
             """ Cuts off beginning string so that only $mlen characters remain and
@@ -508,7 +505,7 @@ class CbcImportUi(object):
             return """<span style="background-color: %s; color: %s">%s</span>""" % (bcolor, fcolor, str(value))
 
         divider = "<big>|</big>"
-        texts = [format_key_value("In", shorten(self.import_file, length=20)),
+        texts = [format_key_value("In", shorten(self.filename_import, length=20)),
                  divider,
                  format_key_value("Cur", "{}/{}".format(self.data.reduced_cursor(), self.data.len_queue())),
                  format_key_value("Idx", "{}/{}".format(self.data.full_cursor(), self.data.len_all())),
