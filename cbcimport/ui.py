@@ -63,10 +63,10 @@ class CbcImportUi(object):
         self.button_box = None  # type: QBoxLayout
         self.settings_box = None  # type: QBoxLayout
 
+    # ========================= [ Manipulate notes
+
     def insert(self):
-        """ Inserts an entry from self.queue
-        into the Anki Dialog
-        """
+        """ Inserts the current entry from the queue into the Anki editor window"""
         if self.data.is_queue_empty():
             tooltip(_("Queue is empty!"), period=1000)
             return
@@ -90,11 +90,10 @@ class CbcImportUi(object):
             self.e.note[field] = ""
         self.e.note.flush()
 
-    # Loading/Saving file
-    # ------------------------
+    # ========================= [ Loading/Saving/Showing files ] =========================
 
     def new_input_file(self):
-        filters = "csv Files (*.csv);;All Files (*)"
+        filters = "csv Files (*.csv);;tsv Files (*.tsv);;All Files (*)"
         import_file = QFileDialog.getSaveFileName(QFileDialog(), "Pick a file to import.",
                                                   self.default_dir, filters, options=QFileDialog.DontConfirmOverwrite)
         if import_file:
@@ -146,7 +145,46 @@ class CbcImportUi(object):
         #     except:
         #         tooltip(_("Could not open output file %s" % self.rest_file),period=1500)
 
-    def save_button_pushed(self):
+
+    def show(self):
+        """ Opens input file in an external editor. """
+        if self.import_file.strip():
+            os.system(self.default_editor.format(filename=self.import_file))
+        else:
+            tooltip(_("No input File!"), period=1500)
+
+    # ========================= [ Reacting to user interaction ] =========================
+
+    def on_button_insert_clicked(self):
+        """ Inserts the current entry from the queue into the Anki editor window"""
+        self.insert()
+
+    def on_button_last_clicked(self):
+        """ Inserts last entry. """
+        self.data.go_last()
+        self.insert()
+
+    def on_button_next_clicked(self):
+        """ Inserts next entry. """
+        self.data.go_next()
+        self.insert()
+
+    def on_button_previous_clicked(self):
+        """ Inserts previous entry. """
+        self.data.go_previous()
+        self.insert()
+
+    def on_button_first_clicked(self):
+        """ Inserts first entry. """
+        self.data.go_first()
+        self.insert()
+
+    def on_button_reverse_clicked(self):
+        """ Reverses the ordering of the queue. """
+        self.data.reverse()
+        self.update_status()
+
+    def on_save_button_clicked(self):
         """ What happens if save button is pushed:
         Show tooltip and save."""
         # todo: Implement
@@ -161,43 +199,21 @@ class CbcImportUi(object):
         #     text+="NO FILE TO SAVE"
         # tooltip(_(text), period=1500)
 
-    def show(self):
-        """ Opens input file in an external editor. """
-        if self.import_file.strip():
-            os.system(self.default_editor.format(filename=self.import_file))
-        else:
-            tooltip(_("No input File!"), period=1500)
-
-    # Controlling self.Idx
-    # -----------------------------
-
-    def last(self):
-        """ Inserts last entry. """
-        self.data.go_last()
-        self.insert()
-
-    def next(self):
-        """ Inserts next entry. """
-        self.data.go_next()
-        self.insert()
-
-    def previous(self):
-        """ Inserts previous entry. """
-        self.data.go_previous()
-        self.insert()
-
-    def first(self):
-        """ Inserts first entry. """
-        self.data.go_first()
-        self.insert()
-
-    def reverse(self):
-        """ Reverses the ordering of the queue. """
-        self.data.reverse()
+    def on_checkbox_changed(self):
+        # so that the settings have an effect on the queue implemented in self.data:
+        self.data.dupes_in_queue = not self.checkboxes["cbcQ_skip_dupe"].isChecked()
+        self.data.added_in_queue = not self.checkboxes["cbcQ_skip_added"].isChecked()
+        self.data.blacklisted_in_queue = not self.checkboxes["cbcQ_skip_black"].isChecked()
+        self.data.rest_in_queue = not self.checkboxes["cbcQ_skip_rest"].isChecked()
+        # save checkbox states to config:
+        for cb_name in self.checkboxes:
+            self.config.set("ui_states", "{}_isChecked()".format(cb_name), str(self.checkboxes[cb_name].isChecked()))
+        self.config.write_config()
+        # update the ui
         self.update_status()
+        self.update_enabled_disabled()
 
-    # Running Hooks and similar
-    # -------------------------------------
+    # ========================= [ Anki Hooks ] =========================
 
     def run_hooks(self):
         """ Runs the hook 'editFocusLost'.
@@ -256,6 +272,8 @@ class CbcImportUi(object):
 
         self.setup_my_menu(editor)
 
+    # ========================= [ Setup the GUI ] =========================
+
     def setup_my_menu(self, editor):
         """ Creates the line of buttons etc. to control this addon.
         :param editor
@@ -298,21 +316,21 @@ class CbcImportUi(object):
                         text="Load", tip="Load file", size="30x60", )
         self.add_button("cbcQ_Show", [self.show, self.update_enabled_disabled],
                         text="Show", tip="Show file", size="30x60", )
-        self.add_button("cbcQ_Reverse", [self.reverse, self.update_enabled_disabled],
+        self.add_button("cbcQ_Reverse", [self.on_button_reverse_clicked, self.update_enabled_disabled],
                         text="Reverse", tip="Reverse Order", size="30x60", )
-        self.add_button("cbcQ_Save", [self.save_button_pushed, self.update_enabled_disabled],
+        self.add_button("cbcQ_Save", [self.on_save_button_clicked, self.update_enabled_disabled],
                         text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
-        self.add_button("cbcQ_First", [self.first, self.update_enabled_disabled],
+        self.add_button("cbcQ_First", [self.on_button_first_clicked, self.update_enabled_disabled],
                         text="<<", tip="Fill in first entry", size="30x50", )
-        self.add_button("cbcQ_Previous", [self.previous, self.update_enabled_disabled],
+        self.add_button("cbcQ_Previous", [self.on_button_previous_clicked, self.update_enabled_disabled],
                         text="<", tip="Fill in previous entry", size="30x50", )
         self.add_button("cbcQ_Fill", [self.insert, self.update_enabled_disabled],
                         text="X", tip="Fill in form (Ctrl+F)", size="30x50",
                         key="Ctrl+F")
-        self.add_button("cbcQ_Next", [self.next, self.update_enabled_disabled],
+        self.add_button("cbcQ_Next", [self.on_button_next_clicked, self.update_enabled_disabled],
                         text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
                         key="Ctrl+G")
-        self.add_button("cbcQ_Last", [self.last, self.update_enabled_disabled],
+        self.add_button("cbcQ_Last", [self.on_button_last_clicked, self.update_enabled_disabled],
                         text=">>", tip="Fill in last entry", size="30x50", )
 
         self.add_checkbox("cbcQ_skip_dupe", [self.on_checkbox_changed], "Skip Dupe")
@@ -326,20 +344,6 @@ class CbcImportUi(object):
 
         self.update_enabled_disabled()
         self.on_checkbox_changed()
-
-    def on_checkbox_changed(self):
-        # so that the settings have an effect on the queue implemented in self.data:
-        self.data.dupes_in_queue = not self.checkboxes["cbcQ_skip_dupe"].isChecked()
-        self.data.added_in_queue = not self.checkboxes["cbcQ_skip_added"].isChecked()
-        self.data.blacklisted_in_queue = not self.checkboxes["cbcQ_skip_black"].isChecked()
-        self.data.rest_in_queue = not self.checkboxes["cbcQ_skip_rest"].isChecked()
-        # save checkbox states to config:
-        for cb_name in self.checkboxes:
-            self.config.set("ui_states", "{}_isChecked()".format(cb_name), str(self.checkboxes[cb_name].isChecked()))
-        self.config.write_config()
-        # update the ui
-        self.update_status()
-        self.update_enabled_disabled()
 
     def add_checkbox(self, name, funcs, text):
         checkbox = QCheckBox()
@@ -401,6 +405,8 @@ class CbcImportUi(object):
         self.button_box.addWidget(button)
         self.buttons[name] = button
         return button
+
+    # ========================= [ Update the GUI ] =========================
 
     def update_enabled_disabled(self):
         # note the difference between VocabularyCollection.queue_empty()
