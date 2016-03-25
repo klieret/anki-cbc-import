@@ -4,8 +4,6 @@
 """ The user interface added to Anki's edit dialogues.
 """
 
-# future: add check box skip_added skip_dupes, skip_black, skip_normal
-
 import glob
 import copy
 from gettext import gettext as _
@@ -26,7 +24,7 @@ __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
 
 
-# todo: a few docstrings are still missing
+# todo: add an option to hide the options.
 class CbcImportUi(object):
     def __init__(self):
         """ init and basic configuration """
@@ -47,8 +45,8 @@ class CbcImportUi(object):
         # Note that nothing is added yet.
         self.data = VocabularyCollection()
 
-        self.e = None     # instance of the Editor window
-        self.mw = None    # instance of main window
+        self.e = None  # instance of the Editor window
+        self.mw = None  # instance of main window
 
         # was last Card added to self.added?
         self.last_added = None  # type: None|bool
@@ -63,7 +61,7 @@ class CbcImportUi(object):
         self.button_box = None  # type: QBoxLayout
         self.settings_box = None  # type: QBoxLayout
 
-    # ========================= [ Manipulate notes
+    # ========================= [ Manipulate notes ] =========================
 
     def insert(self):
         """ Inserts the current entry from the queue into the Anki editor window"""
@@ -91,14 +89,6 @@ class CbcImportUi(object):
         self.e.note.flush()
 
     # ========================= [ Loading/Saving/Showing files ] =========================
-
-    def new_input_file(self):
-        filters = "csv Files (*.csv);;tsv Files (*.tsv);;All Files (*)"
-        import_file = QFileDialog.getSaveFileName(QFileDialog(), "Pick a file to import.",
-                                                  self.default_dir, filters, options=QFileDialog.DontConfirmOverwrite)
-        if import_file:
-            self.import_file = import_file
-        self.update_status()
 
     def load(self):
         """ Loads input file to self.data. """
@@ -145,7 +135,6 @@ class CbcImportUi(object):
         #     except:
         #         tooltip(_("Could not open output file %s" % self.rest_file),period=1500)
 
-
     def show(self):
         """ Opens input file in an external editor. """
         if self.import_file.strip():
@@ -184,9 +173,20 @@ class CbcImportUi(object):
         self.data.reverse()
         self.update_status()
 
+    def on_choose_import_file(self):
+        """ Opens a dialogue to let the user change the input file.
+        :return: True if a file was chosen, False otherwise.
+        """
+        filters = "csv Files (*.csv);;tsv Files (*.tsv);;All Files (*)"
+        import_file = QFileDialog.getSaveFileName(QFileDialog(), "Pick a file to import.",
+                                                  self.default_dir, filters, options=QFileDialog.DontConfirmOverwrite)
+        if import_file:
+            self.import_file = import_file
+        self.update_status()
+        return bool(import_file)
+
     def on_save_button_clicked(self):
-        """ What happens if save button is pushed:
-        Show tooltip and save."""
+        """ What happens if save button is pushed: Show tooltip and save."""
         # todo: Implement
         self.save()
         # # tooltip
@@ -200,6 +200,7 @@ class CbcImportUi(object):
         # tooltip(_(text), period=1500)
 
     def on_checkbox_changed(self):
+        """ One of the checkboxes was clicked. Update settings etc. """
         # so that the settings have an effect on the queue implemented in self.data:
         self.data.dupes_in_queue = not self.checkboxes["cbcQ_skip_dupe"].isChecked()
         self.data.added_in_queue = not self.checkboxes["cbcQ_skip_added"].isChecked()
@@ -275,7 +276,7 @@ class CbcImportUi(object):
     # ========================= [ Setup the GUI ] =========================
 
     def setup_my_menu(self, editor):
-        """ Creates the line of buttons etc. to control this addon.
+        """ Sets up the editor menu.
         :param editor
         """
         self.e = editor.editor
@@ -310,33 +311,40 @@ class CbcImportUi(object):
 
         # Buttons starting with cbcQ_ are only active if queue is non empty
         # (carefull when changing button name!)
-        self.add_button("cbc_NewInputFile", [self.new_input_file, self.update_enabled_disabled],
-                        text="Choose File", tip="Choose new input file.", size="30x120", )
-        self.add_button("cbc_Load", [self.load, self.update_enabled_disabled],
-                        text="Load", tip="Load file", size="30x60", )
-        self.add_button("cbcQ_Show", [self.show, self.update_enabled_disabled],
-                        text="Show", tip="Show file", size="30x60", )
-        self.add_button("cbcQ_Reverse", [self.on_button_reverse_clicked, self.update_enabled_disabled],
-                        text="Reverse", tip="Reverse Order", size="30x60", )
-        self.add_button("cbcQ_Save", [self.on_save_button_clicked, self.update_enabled_disabled],
-                        text="Save", tip="Saves all added resp. all remaining notes to two files.", size="30x60", )
-        self.add_button("cbcQ_First", [self.on_button_first_clicked, self.update_enabled_disabled],
-                        text="<<", tip="Fill in first entry", size="30x50", )
-        self.add_button("cbcQ_Previous", [self.on_button_previous_clicked, self.update_enabled_disabled],
-                        text="<", tip="Fill in previous entry", size="30x50", )
-        self.add_button("cbcQ_Fill", [self.insert, self.update_enabled_disabled],
-                        text="X", tip="Fill in form (Ctrl+F)", size="30x50",
-                        key="Ctrl+F")
-        self.add_button("cbcQ_Next", [self.on_button_next_clicked, self.update_enabled_disabled],
-                        text=">", tip="Fill in next entry (Ctrl+G)", size="30x50",
-                        key="Ctrl+G")
-        self.add_button("cbcQ_Last", [self.on_button_last_clicked, self.update_enabled_disabled],
-                        text=">>", tip="Fill in last entry", size="30x50", )
+        self.add_toolbar_button("cbc_NewInputFile", [self.on_choose_import_file, self.update_enabled_disabled],
+                                text=u"Choose File", tip="Choose new input file.", size="30x100", )
+        self.add_toolbar_button("cbc_Load", [self.load, self.update_enabled_disabled],
+                                text=u"Load ⟲", tip="Load file", size="30x80", )
+        self.add_toolbar_button("cbcQ_Show", [self.show, self.update_enabled_disabled],
+                                text=u"Show", tip="Show file", size="30x60", )
+        self.add_toolbar_button("cbcQ_Reverse", [self.on_button_reverse_clicked, self.update_enabled_disabled],
+                                text=u"Reverse ⇄", tip="Reverse Order", size="30x90", )
+        self.add_toolbar_button("cbcQ_Save", [self.on_save_button_clicked, self.update_enabled_disabled],
+                                text=u"Save", tip="Saves all added resp. all remaining notes to two files.",
+                                size="30x60")
+        self.add_toolbar_button("cbcQ_First", [self.on_button_first_clicked, self.update_enabled_disabled],
+                                text=u"<<", tip="Fill in first entry", size="30x30", )
+        self.add_toolbar_button("cbcQ_Previous", [self.on_button_previous_clicked, self.update_enabled_disabled],
+                                text=u"<", tip="Fill in previous entry", size="30x30", )
+        self.add_toolbar_button("cbcQ_Fill", [self.insert, self.update_enabled_disabled],
+                                text=u"X↥", tip="Fill in form (Ctrl+F)", size="30x30",
+                                key="Ctrl+F")
+        self.add_toolbar_button("cbcQ_Next", [self.on_button_next_clicked, self.update_enabled_disabled],
+                                text=u">", tip="Fill in next entry (Ctrl+G)", size="30x30",
+                                key="Ctrl+G")
+        self.add_toolbar_button("cbcQ_Last", [self.on_button_last_clicked, self.update_enabled_disabled],
+                                text=u">>", tip="Fill in last entry", size="30x30", )
 
-        self.add_checkbox("cbcQ_skip_dupe", [self.on_checkbox_changed], "Skip Dupe")
-        self.add_checkbox("cbcQ_skip_added", [self.on_checkbox_changed], "Skip Added")
-        self.add_checkbox("cbcQ_skip_black", [self.on_checkbox_changed], "Skip Black")
-        self.add_checkbox("cbcQ_skip_rest", [self.on_checkbox_changed], "Skip Rest")
+        self.add_show_hide()
+
+        self.add_settings_checkbox("cbcQ_skip_dupe", [self.on_checkbox_changed], "Skip Dupe",
+                                   tip="Skip notes that are classified as duplicate by Anki.")
+        self.add_settings_checkbox("cbcQ_skip_added", [self.on_checkbox_changed], "Skip Added",
+                                   tip="Skip notes that were already added in this session of the cbcImport plugin.")
+        self.add_settings_checkbox("cbcQ_skip_black", [self.on_checkbox_changed], "Skip Black",
+                                   tip="Skip notes that were blacklisted.")
+        self.add_settings_checkbox("cbcQ_skip_rest", [self.on_checkbox_changed], "Skip Rest",
+                                   tip="Skip all notes that are neither added, blacklisted or classified as duplicate.")
 
         self.status = QLabel()
         self.update_status()
@@ -345,9 +353,22 @@ class CbcImportUi(object):
         self.update_enabled_disabled()
         self.on_checkbox_changed()
 
-    def add_checkbox(self, name, funcs, text):
+    def add_show_hide(self):
+        self.add_toolbar_button("cbcQ_Last", [self.on_button_last_clicked, self.update_enabled_disabled],
+                                text=u"Hide", tip="Show options and statistics", size="30x80", )
+        # #⇱⇲
+        pass
+
+    # todo: add tooltips
+    def add_settings_checkbox(self, name, funcs, text="", tip=""):
+        """ Shortcut to add a new checkbox to self.settings_box.
+        :param name: We set self.settings_box[name] = checkbox
+        :param funcs: List of functions the checkbox should be connected to when clicked
+        :param text: Label of the checkbox
+        :param tip: Tooltip
+        :return: checkbox
+        """
         checkbox = QCheckBox()
-        checkbox.adjustSize()
         checkbox.setText(text)
         checkbox.adjustSize()
         self.settings_box.addWidget(checkbox)
@@ -360,12 +381,14 @@ class CbcImportUi(object):
         except (NoOptionError, NoSectionError):
             logger.warning("Missing a checkbox config option.".format())
             checkbox.setChecked(False)
+        if tip:
+            checkbox.setToolTip(shortcut(tip))
         return checkbox
 
-    def add_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
+    def add_toolbar_button(self, name, funcs, key=None, tip=None, size="30x50", text=u"", check=False):
         """ Shortcut to add a new button to self.button_box.
-        :param name: We do self.buttons[name] = button
-        :param funcs: List of functions the button should be connected to.
+        :param name: We set self.buttons[name] = button
+        :param funcs: List of functions the button should be connected to when clicked
         :param key: ?
         :param tip: Tooltip
         :param size: Either None or of form "30x50" etc.
@@ -409,6 +432,7 @@ class CbcImportUi(object):
     # ========================= [ Update the GUI ] =========================
 
     def update_enabled_disabled(self):
+        """ Enables/Disables buttons/checkboxes based on the state of the addon """
         # note the difference between VocabularyCollection.queue_empty()
         # and VocabularyCollection.empty()
         if not self.data.is_queue_empty():
@@ -435,9 +459,8 @@ class CbcImportUi(object):
                     self.checkboxes[checkboxName].setEnabled(False)
 
     def update_status(self):
-        """ Updates button texts e.g. to display
-        number of remaining entries etc.
-        """
+        """ Updates the status label to display number of remaining entries etc. """
+
         def shorten(string, length=10):
             """ Cuts off beginning string so that only $mlen characters remain and
             adds '...' at the front if nescessary.
@@ -449,8 +472,8 @@ class CbcImportUi(object):
             else:
                 return "..." + string[-length:]
 
-        def format_key_value(key, value):
-            return "<b>{}:</b> {}".format(key, red(value))
+        def format_key_value(key, value, symbol=""):
+            return "<b>{}:</b> {}{}".format(key, red(value), symbol)
 
         def red(string):
             return '<font color="red">{}</font>'.format(string)
@@ -480,4 +503,14 @@ class CbcImportUi(object):
                  "<b>LA</b>: {}".format(format_bool_html(self.last_added)),
                  ]
 
+        # don't indent!
+        tool_tip = """In: Name of the input file.
+Cur: Index of the current item in the queue/Total number of items in the queue
+Idx: Index of the current item/Total number of items
+Add: Number of added notes.
+Dup: Number of duplicate notes.
+Black: Number of blacklisted notes.
+LA: Was the last note counted as "added"?"""
+
         self.status.setText('&nbsp;&nbsp;'.join(texts))
+        self.status.setToolTip(tool_tip)
