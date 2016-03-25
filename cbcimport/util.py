@@ -11,8 +11,7 @@ __license__ = "LGPLv3"
 
 
 def split_multiple_delims(string, delims):
-    """ Like the string.split method, but with
-    multiple delimeters, supplied as a list.
+    """ Like the string.split method, but with multiple delimeters, supplied as a list.
     :type string: str
     :type delims: list[str]"""
     # See http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters
@@ -20,3 +19,11 @@ def split_multiple_delims(string, delims):
     for delim in delims:
         string = string.replace(delim, delims[0])
     return string.split(delims[0])
+
+
+def layout_widgets(layout):
+    """ Returns an iterable over the widgets of a layout.
+    :type layout: A Q Layout
+    :return:
+    """
+    return [layout.itemAt(i).widget() for i in range(layout.count())]

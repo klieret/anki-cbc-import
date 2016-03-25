@@ -10,14 +10,14 @@ from gettext import gettext as _
 from aqt import mw  # main window
 from aqt.utils import shortcut, tooltip
 import os.path
-from aqt.qt import QFileDialog, QHBoxLayout, isMac, QPushButton, QLabel, SIGNAL, QIcon, QKeySequence, QBoxLayout, \
-    QCheckBox, QVBoxLayout, QFrame
+from aqt.qt import *
 import aqt
 from anki.hooks import runHook
 from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.log import logger
 from config import config as _config  # '_' because CbcImportUi.config should be used after setting it to _config
 from ConfigParser import NoOptionError, NoSectionError
+from cbcimport.util import layout_widgets
 
 __author__ = "ch4noyu"
 __email__ = "ch4noyu@yahoo.com"
@@ -50,6 +50,9 @@ class CbcImportUi(object):
 
         # was last Card added to self.added?
         self.last_added = None  # type: None|bool
+
+        # todo: set default values from config
+        self.hiding = False  # type: bool
 
         # Qt objects:
         self.frame = None  # type: QFrame
@@ -199,6 +202,10 @@ class CbcImportUi(object):
         #     text+="NO FILE TO SAVE"
         # tooltip(_(text), period=1500)
 
+    def on_show_hide_button_clicked(self):
+        self.hiding = not self.hiding
+        self.update_visibility()
+
     def on_checkbox_changed(self):
         """ One of the checkboxes was clicked. Update settings etc. """
         # so that the settings have an effect on the queue implemented in self.data:
@@ -312,7 +319,7 @@ class CbcImportUi(object):
         # Buttons starting with cbcQ_ are only active if queue is non empty
         # (carefull when changing button name!)
         self.add_toolbar_button("cbc_NewInputFile", [self.on_choose_import_file, self.update_enabled_disabled],
-                                text=u"Choose File", tip="Choose new input file.", size="30x100", )
+                                text=u"File", tip="Choose new input file.", size="30x80", )
         self.add_toolbar_button("cbc_Load", [self.load, self.update_enabled_disabled],
                                 text=u"Load ⟲", tip="Load file", size="30x80", )
         self.add_toolbar_button("cbcQ_Show", [self.show, self.update_enabled_disabled],
@@ -322,6 +329,8 @@ class CbcImportUi(object):
         self.add_toolbar_button("cbcQ_Save", [self.on_save_button_clicked, self.update_enabled_disabled],
                                 text=u"Save", tip="Saves all added resp. all remaining notes to two files.",
                                 size="30x60")
+
+        self.button_box.addItem(QSpacerItem(15, 1, QSizePolicy.Minimum, QSizePolicy.Preferred))
         self.add_toolbar_button("cbcQ_First", [self.on_button_first_clicked, self.update_enabled_disabled],
                                 text=u"<<", tip="Fill in first entry", size="30x30", )
         self.add_toolbar_button("cbcQ_Previous", [self.on_button_previous_clicked, self.update_enabled_disabled],
@@ -335,7 +344,9 @@ class CbcImportUi(object):
         self.add_toolbar_button("cbcQ_Last", [self.on_button_last_clicked, self.update_enabled_disabled],
                                 text=u">>", tip="Fill in last entry", size="30x30", )
 
-        self.add_show_hide()
+        self.button_box.addItem(QSpacerItem(15, 1, QSizePolicy.Minimum, QSizePolicy.Preferred))
+        self.add_toolbar_button("cbc_show_hide", [self.on_show_hide_button_clicked], size="30x80")
+        # text/tooltip will be updated below.
 
         self.add_settings_checkbox("cbcQ_skip_dupe", [self.on_checkbox_changed], "Skip Dupe",
                                    tip="Skip notes that are classified as duplicate by Anki.")
@@ -351,15 +362,21 @@ class CbcImportUi(object):
         self.status_box.addWidget(self.status)
 
         self.update_enabled_disabled()
+        self.update_visibility()
         self.on_checkbox_changed()
 
-    def add_show_hide(self):
-        self.add_toolbar_button("cbcQ_Last", [self.on_button_last_clicked, self.update_enabled_disabled],
-                                text=u"Hide", tip="Show options and statistics", size="30x80", )
-        # #⇱⇲
-        pass
+    def update_visibility(self):
+        text = u"Hide"
+        tip = "Hide options and statistics."
+        if not self.hiding:
+            text = u"Advanced"
+            tip = "Show options and statistics."
+        self.buttons["cbc_show_hide"].setText(text)
+        self.buttons["cbc_show_hide"].setToolTip(tip)
 
-    # todo: add tooltips
+        for widget in layout_widgets(self.settings_box) + layout_widgets(self.status_box):
+            widget.setVisible(self.hiding)
+
     def add_settings_checkbox(self, name, funcs, text="", tip=""):
         """ Shortcut to add a new checkbox to self.settings_box.
         :param name: We set self.settings_box[name] = checkbox
@@ -503,14 +520,13 @@ class CbcImportUi(object):
                  "<b>LA</b>: {}".format(format_bool_html(self.last_added)),
                  ]
 
-        # don't indent!
-        tool_tip = """In: Name of the input file.
-Cur: Index of the current item in the queue/Total number of items in the queue
-Idx: Index of the current item/Total number of items
-Add: Number of added notes.
-Dup: Number of duplicate notes.
-Black: Number of blacklisted notes.
-LA: Was the last note counted as "added"?"""
+        tooltips = ["In: Name of the input file.",
+                    "Cur: Index of the current item in the queue/Total number of items in the queue",
+                    "Idx: Index of the current item/Total number of items",
+                    "Add: Number of added notes.",
+                    "Dup: Number of duplicate notes.",
+                    "Black: Number of blacklisted notes.",
+                    "LA: Was the last note counted as \"added\"?"]
 
         self.status.setText('&nbsp;&nbsp;'.join(texts))
-        self.status.setToolTip(tool_tip)
+        self.status.setToolTip('\n'.join(tooltips))
