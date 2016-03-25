@@ -22,6 +22,7 @@ __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
 
 
+# todo: a few docstrings are still missing
 class Word(object):
     """ Contains information about one word of vocabulary.
     All data fields can be accessed by Word[field_name].

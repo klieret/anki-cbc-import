@@ -18,17 +18,20 @@ import aqt
 from anki.hooks import runHook
 from cbcimport.vocabulary import VocabularyCollection
 from cbcimport.log import logger
-from config import config
+from config import config as _config  # '_' because CbcImportUi.config should be used after setting it to _config
+from ConfigParser import NoOptionError, NoSectionError
 
 __author__ = "ch4noyu"
 __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
 
 
+# todo: a few docstrings are still missing
 class CbcImportUi(object):
     def __init__(self):
         """ init and basic configuration """
-        self.default_dir = os.path.expanduser(config.get("general", "default_dir"))
+        self.config = _config
+        self.default_dir = os.path.expanduser(self.config.get("general", "default_dir"))
 
         # will be set in self.on_editor_opened (since we might want to get the content
         # self.default_dir to choose default_pics, and the content might have changed after
@@ -325,11 +328,16 @@ class CbcImportUi(object):
         self.on_checkbox_changed()
 
     def on_checkbox_changed(self):
-        print "on checkbox changed"
+        # so that the settings have an effect on the queue implemented in self.data:
         self.data.dupes_in_queue = not self.checkboxes["cbcQ_skip_dupe"].isChecked()
         self.data.added_in_queue = not self.checkboxes["cbcQ_skip_added"].isChecked()
         self.data.blacklisted_in_queue = not self.checkboxes["cbcQ_skip_black"].isChecked()
         self.data.rest_in_queue = not self.checkboxes["cbcQ_skip_rest"].isChecked()
+        # save checkbox states to config:
+        for cb_name in self.checkboxes:
+            self.config.set("ui_states", "{}_isChecked()".format(cb_name), str(self.checkboxes[cb_name].isChecked()))
+        self.config.write_config()
+        # update the ui
         self.update_status()
         self.update_enabled_disabled()
 
@@ -342,6 +350,12 @@ class CbcImportUi(object):
         self.checkboxes[name] = checkbox
         for func in funcs:
             checkbox.connect(checkbox, SIGNAL("clicked(bool)"), func)
+        # try to set default value/saved value from config file (if set)
+        try:
+            checkbox.setChecked(self.config.getboolean("ui_states", "{}_isChecked()".format(name)))
+        except (NoOptionError, NoSectionError):
+            logger.warning("Missing a checkbox config option.".format())
+            checkbox.setChecked(False)
         return checkbox
 
     def add_button(self, name, funcs, key=None, tip=None, size="30x50", text="", check=False):
