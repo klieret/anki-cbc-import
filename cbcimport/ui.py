@@ -94,6 +94,7 @@ class CbcImportUi(object):
 
     # ========================= [ Loading/Saving/Showing files ] =========================
 
+    # todo: should also take black files in consideration!
     def load(self):
         """ Loads input file to self.data. """
         self.data = VocabularyCollection()
@@ -137,29 +138,34 @@ class CbcImportUi(object):
 
     # ========================= [ Reacting to user interaction ] =========================
 
+    def go_anything(self):
+        self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
+        self.checkboxes["cbcQ_blacklist_current"].setChecked(False)
+        self.insert()
+
     def on_button_insert_clicked(self):
         """ Inserts the current entry from the queue into the Anki editor window"""
-        self.insert()
+        self.go_anything()
 
     def on_button_last_clicked(self):
         """ Inserts last entry. """
         self.data.go_last()
-        self.insert()
+        self.go_anything()
 
     def on_button_next_clicked(self):
         """ Inserts next entry. """
         self.data.go_next()
-        self.insert()
+        self.go_anything()
 
     def on_button_previous_clicked(self):
         """ Inserts previous entry. """
         self.data.go_previous()
-        self.insert()
+        self.go_anything()
 
     def on_button_first_clicked(self):
         """ Inserts first entry. """
         self.data.go_first()
-        self.insert()
+        self.go_anything()
 
     def on_button_reverse_clicked(self):
         """ Reverses the ordering of the queue. """
@@ -202,6 +208,11 @@ class CbcImportUi(object):
         self.update_status()
         self.update_enabled_disabled()
 
+    def on_checkbox_blacklist_changed(self):
+        """ User clicked the "Blacklist current" checkbox """
+        # self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
+        pass
+
     # ========================= [ Anki Hooks ] =========================
 
     def run_hooks(self):
@@ -234,6 +245,8 @@ class CbcImportUi(object):
             if self.data.is_expression_in_queue(note['Expression']):
                 self.last_added = True
                 self.data.get_current().is_added = True
+                self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
+                self.checkboxes["cbcQ_blacklist_current"].setChecked(False)
 
         self.update_status()
 
@@ -337,6 +350,8 @@ class CbcImportUi(object):
                                    tip="Skip notes that were blacklisted.")
         self.add_settings_checkbox("cbcQ_skip_rest", [self.on_checkbox_changed], "Skip Rest",
                                    tip="Skip all notes that are neither added, blacklisted or classified as duplicate.")
+        self.add_settings_checkbox("cbcQ_blacklist_current", [self.on_checkbox_blacklist_changed], "Blacklist Current",
+                                   tip="Blacklist current expression")
 
         self.status = QLabel()
         self.update_status()
@@ -346,6 +361,7 @@ class CbcImportUi(object):
         self.update_visibility()
         self.on_checkbox_changed()
 
+    # todo: docstring
     def update_visibility(self):
         text = u"Hide"
         tip = "Hide options and statistics."
