@@ -6,10 +6,9 @@
 
 import glob
 import copy
-from gettext import gettext as _
+from anki.lang import _ 
 from aqt import mw  # main window
 from aqt.utils import shortcut, tooltip
-import os.path
 from aqt.qt import *
 import aqt
 from anki.hooks import runHook
@@ -24,7 +23,9 @@ __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
 
 
+# todo: save show/hide option
 # todo: add an option to hide the options.
+# todo: implement blacklist
 class CbcImportUi(object):
     def __init__(self):
         """ init and basic configuration """
@@ -182,7 +183,7 @@ class CbcImportUi(object):
         self.save()
         tooltip(_("Saved!"), period=1500)
 
-    def on_show_hide_button_clicked(self):
+    def on_button_show_hide_clicked(self):
         self.hiding = not self.hiding
         self.update_visibility()
 
@@ -325,7 +326,7 @@ class CbcImportUi(object):
                                 text=u">>", tip="Fill in last entry", size="30x30", )
 
         self.button_box.addItem(QSpacerItem(15, 1, QSizePolicy.Minimum, QSizePolicy.Preferred))
-        self.add_toolbar_button("cbc_show_hide", [self.on_show_hide_button_clicked], size="30x80")
+        self.add_toolbar_button("cbc_show_hide", [self.on_button_show_hide_clicked], size="30x80")
         # text/tooltip will be updated below.
 
         self.add_settings_checkbox("cbcQ_skip_dupe", [self.on_checkbox_changed], "Skip Dupe",
