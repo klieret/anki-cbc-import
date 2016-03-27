@@ -141,3 +141,6 @@ class Word(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def __nonzero__(self):
+        return bool(self.expression.split())

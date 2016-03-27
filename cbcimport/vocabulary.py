@@ -59,8 +59,12 @@ class VocabularyCollection(object):
         self._cursor = len(self._data) - 1 - self._cursor
 
     def get_current(self):
-        """ Return the element at the cursor. """
-        return self._data[self._cursor]
+        """ Return the element at the cursor.
+        If the cursor is out of range, return a blank word object."""
+        try:
+            self._data[self._cursor]
+        except IndexError:
+            return Word()
 
     def set_current(self, elem):
         """ Replace the element at the cursor with $elem.

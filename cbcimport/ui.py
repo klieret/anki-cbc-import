@@ -23,6 +23,8 @@ __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
 
 
+# fixme: still active, even if we're adding other cards. Causes errors!
+# fixme: some of the checkbox states apparently are not saved
 # todo: save show/hide option
 # todo: add an option to hide the options.
 # todo: implement blacklist
@@ -208,11 +210,6 @@ class CbcImportUi(object):
         self.update_status()
         self.update_enabled_disabled()
 
-    def on_checkbox_blacklist_changed(self):
-        """ User clicked the "Blacklist current" checkbox """
-        # self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
-        pass
-
     # ========================= [ Anki Hooks ] =========================
 
     def run_hooks(self):
@@ -239,15 +236,18 @@ class CbcImportUi(object):
         # save user input
         # this seems to be neccessary
         note.flush()
-        if self.data.is_go_next_possible():
-            # We have to check if the we really are adding an element
-            # of the queue. Problem is that we want to allow some tolerance
-            if self.data.is_expression_in_queue(note['Expression']):
-                self.last_added = True
-                self.data.get_current().is_added = True
-                self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
-                self.checkboxes["cbcQ_blacklist_current"].setChecked(False)
-
+        # We have to check if the we really are adding an element
+        # of the queue. Problem is that we want to allow some tolerance
+        if self.data.is_expression_in_queue(note['Expression']):
+            self.last_added = True
+            self.data.get_current().is_added = True
+            self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
+            self.checkboxes["cbcQ_blacklist_current"].setChecked(False)
+            if self.checkboxes["cbcQ_auto_insert"].isChecked():
+                # todo:
+                print "auto insert"
+                self.data.go_next()
+                self.insert()
         self.update_status()
 
     # noinspection PyUnusedLocal
@@ -350,7 +350,9 @@ class CbcImportUi(object):
                                    tip="Skip notes that were blacklisted.")
         self.add_settings_checkbox("cbcQ_skip_rest", [self.on_checkbox_changed], "Skip Rest",
                                    tip="Skip all notes that are neither added, blacklisted or classified as duplicate.")
-        self.add_settings_checkbox("cbcQ_blacklist_current", [self.on_checkbox_blacklist_changed], "Blacklist Current",
+        self.add_settings_checkbox("cbcQ_auto_insert", [self.on_checkbox_changed], "Auto Insert",
+                                   tip="Automatically insert next expression, after note was added.")
+        self.add_settings_checkbox("cbcQ_blacklist_current", [self.on_checkbox_changed], "Blacklist Current",
                                    tip="Blacklist current expression")
 
         self.status = QLabel()
