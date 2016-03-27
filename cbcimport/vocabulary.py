@@ -62,7 +62,7 @@ class VocabularyCollection(object):
         """ Return the element at the cursor.
         If the cursor is out of range, return a blank word object."""
         try:
-            self._data[self._cursor]
+            return self._data[self._cursor]
         except IndexError:
             return Word()
 
@@ -304,7 +304,7 @@ class VocabularyCollection(object):
         Needed to check if the expression that was added was added from cbc_import.
         :type exp: unicode string
         """
-        current_expressions = self.get_current().splitted_expression()
+        current_expressions = self.get_current().splitted_expression
         if not current_expressions:
             return False
         for expression in current_expressions:
