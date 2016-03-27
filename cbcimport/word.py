@@ -108,7 +108,7 @@ class Word(object):
         splitted = split_multiple_delims(unicode(self.expression), delims=delims)
         if self.reverse_splitting:
             splitted.reverse()
-        print(splitted)
+        splitted = [item.strip() for item in splitted]
         return splitted
 
     @property

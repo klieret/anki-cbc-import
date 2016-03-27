@@ -299,26 +299,22 @@ class VocabularyCollection(object):
         """ Is the queue empty? """
         return self.len_queue() == 0
 
-    # fixme: this should be renamed, because it does something completely different.
-    def is_expression_in_queue(self, exp):
-        """ Is expression $exp already in the queue?
+    def is_expression_current_word(self, exp):
+        """ Is expression the expression the word that is at the cursor position?
+        Needed to check if the expression that was added was added from cbc_import.
         :type exp: unicode string
         """
-        # todo: docstring about how this is used
-        try:
-            current_expression = self.get_current()["Expression"]
-        except KeyError:
-            # queue empty or something
+        current_expressions = self.get_current().splitted_expression()
+        if not current_expressions:
             return False
-        if len(exp) >= 3:
-            if exp in current_expression:
-                return True
-        else:
-            # fixme: we'll never even get here!
-            delims = [',', ';', '・'.decode('utf-8')]
-            exps = split_multiple_delims(self.get_current()["Expression"], delims)
-            if exp in exps:
-                return True
+        for expression in current_expressions:
+            expression = expression.strip()
+            if len(expression) >= 5:
+                if exp in expression:
+                    return True
+            else:
+                if exp == expression:
+                    return True
         return False
             
 

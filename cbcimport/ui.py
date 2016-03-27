@@ -241,7 +241,7 @@ class CbcImportUi(object):
         note.flush()
         # We have to check if the we really are adding an element
         # of the queue. Problem is that we want to allow some tolerance
-        if self.data.is_expression_in_queue(note['Expression']):
+        if self.data.is_expression_current_word(note['Expression']):
             self.last_added = True
             self.data.get_current().is_added = True
             self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
