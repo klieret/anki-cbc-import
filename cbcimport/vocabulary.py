@@ -299,15 +299,22 @@ class VocabularyCollection(object):
         """ Is the queue empty? """
         return self.len_queue() == 0
 
+    # fixme: this should be renamed, because it does something completely different.
     def is_expression_in_queue(self, exp):
         """ Is expression $exp already in the queue?
         :type exp: unicode string
         """
         # todo: docstring about how this is used
+        try:
+            current_expression = self.get_current()["Expression"]
+        except KeyError:
+            # queue empty or something
+            return False
         if len(exp) >= 3:
-            if exp in self.get_current()["Expression"]:
+            if exp in current_expression:
                 return True
         else:
+            # fixme: we'll never even get here!
             delims = [',', ';', '・'.decode('utf-8')]
             exps = split_multiple_delims(self.get_current()["Expression"], delims)
             if exp in exps:
