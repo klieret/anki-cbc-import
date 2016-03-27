@@ -25,6 +25,7 @@ __license__ = "LGPLv3"
 
 # fixme: still active, even if we're adding other cards. Causes errors!
 # fixme: some of the checkbox states apparently are not saved
+# fixme: add function CbcImportUi.is_active() and check it before trying to run hook on close edit dialog.
 # todo: save show/hide option
 # todo: add an option to hide the options.
 # todo: implement blacklist
@@ -117,19 +118,22 @@ class CbcImportUi(object):
         self.update_status()
         tooltip(_("All: %d (Dupe: %d)" % (self.data.len_all(), self.data.len_dupe())), period=1500)
 
+    # todo: else statements!
     # cleanup: move to vocabulary class?
-    # noinspection PyMethodMayBeStatic
     def save(self):
         """ Saves self.added and self.rest to the resp. files """
-        with open(self.filename_added, 'wb') as file_:
-            for item in self.data.get_added():
-                file_.write(item.line + "\n")
-        with open(self.filename_rest, 'wb') as file_:
-            for item in self.data.get_rest():
-                file_.write(item.line + "\n")
-        with open(self.filename_black, 'wb') as file_:
-            for item in self.data.get_blacklisted():
-                file_.write(item.line + "\n")
+        if os.path.exists(self.filename_added):
+            with open(self.filename_added, 'wb') as file_:
+                for item in self.data.get_added():
+                    file_.write(item.line + "\n")
+        if os.path.exists(self.filename_rest):
+            with open(self.filename_rest, 'wb') as file_:
+                for item in self.data.get_rest():
+                    file_.write(item.line + "\n")
+        if os.path.exists(self.filename_black):
+            with open(self.filename_black, 'wb') as file_:
+                for item in self.data.get_blacklisted():
+                    file_.write(item.line + "\n")
 
     def show(self):
         """ Opens input file in an external editor. """
@@ -232,7 +236,6 @@ class CbcImportUi(object):
         :param obj: ? (we need this since this is called via hook)
         :param note: The note that was just added.
         """
-        self.last_added = False
         # save user input
         # this seems to be neccessary
         note.flush()
@@ -248,6 +251,8 @@ class CbcImportUi(object):
                 print "auto insert"
                 self.data.go_next()
                 self.insert()
+        else:
+            self.last_added = False
         self.update_status()
 
     # noinspection PyUnusedLocal
