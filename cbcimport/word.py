@@ -79,9 +79,15 @@ class Word(object):
     @property
     def expression(self):
         try:
-            return self.__getitem__(self.expression_field)
+            expression = self.__getitem__(self.expression_field)
         except KeyError:
-            return ""
+            expression = ""
+        # return kana if no expression
+        # (if there are no kana, this will return "").
+        if not expression:
+            return self.kana
+        else:
+            return expression
 
     @property
     def meaning(self):

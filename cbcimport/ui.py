@@ -23,9 +23,11 @@ __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
 
 
+# fixme: kana words (confirm fixed)
 # fixme: still active, even if we're adding other cards. Causes errors!
 # fixme: some of the checkbox states apparently are not saved
 # fixme: add function CbcImportUi.is_active() and check it before trying to run hook on close edit dialog.
+# todo: implement go_next button
 # todo: save show/hide option
 # todo: add an option to hide the options.
 # todo: implement blacklist
@@ -75,8 +77,6 @@ class CbcImportUi(object):
         if self.data.is_queue_empty():
             tooltip(_("Queue is empty!"), period=1000)
             return
-        if not self.data.is_go_next_possible():
-            tooltip(_("Was last entry!"), period=1000)
 
         self.clear_all_fields()
 
@@ -236,22 +236,20 @@ class CbcImportUi(object):
         :param obj: ? (we need this since this is called via hook)
         :param note: The note that was just added.
         """
-        # save user input
-        # this seems to be neccessary
-        note.flush()
+        logger.debug(u"on_add_history for note with Expression {}".format(note["Expression"]))
         # We have to check if the we really are adding an element
         # of the queue. Problem is that we want to allow some tolerance
         if self.data.is_expression_current_word(note['Expression']):
+            logger.debug(u"Was probably added by cbc_import")
+            # save user input
+            # this seems to be neccessary
+            note.flush()
             self.last_added = True
             self.data.get_current().is_added = True
             self.data.get_current().is_blacklisted = self.checkboxes["cbcQ_blacklist_current"].isChecked()
             self.checkboxes["cbcQ_blacklist_current"].setChecked(False)
-            if self.checkboxes["cbcQ_auto_insert"].isChecked():
-                # todo:
-                print "auto insert"
-                self.data.go_next()
-                self.insert()
         else:
+            logger.debug(u"Was probably NOT added by cbc_import.")
             self.last_added = False
         self.update_status()
 
@@ -259,6 +257,7 @@ class CbcImportUi(object):
     def on_cards_added(self, *args):
         """ Has to be called separately to overwrite native 'Added' tooltip.
         """
+        print args
         if self.last_added:
             tooltip(_("Added to added"), period=1000)
         else:
