@@ -10,7 +10,7 @@ import csv
 from log import logger
 from .util import split_multiple_delims
 from word import Word
-from typing import List
+# from typing import List
 from config import config
 
 __author__ = "ch4noyu"

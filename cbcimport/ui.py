@@ -273,7 +273,7 @@ class CbcImportUi(object):
             # last file of all files that are on Desktop and have extension .csv
             self.filename_import = glob.glob(os.path.expanduser("~/Desktop/*.csv"))[-1]
         except IndexError:
-            self.filename_import = None
+            self.filename_import = ""
         self.filename_rest = os.path.expanduser('~/Desktop/rest.csv')
 
         self.setup_my_menu(editor)
