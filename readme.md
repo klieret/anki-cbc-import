@@ -2,7 +2,9 @@
 
 This addon adds a new toolbar to Anki's "Add Card" dialog, that lets the user load csv files, containing new vocabularywhich can then added step by step. This way, the Expression, Meaning and Reading fields will be filled automatically, but the user can add more information to the cards before adding them. For me, this is more effective than other workflows (such as first importing all cards from csv, then accessing them from the browser again to modify & extend them).
 
-I'm using this Addon since quite some time, but haven't really done too much testing, so it's likely to not work out of the box right away for anyone. 
+I'm using this Addon since quite some time, but haven't really done too much testing, so it's likely to not work out of the box right away for anyone. Still, I think it's a pretty cool thing and if more people are interested, I'd invest more time to make it work for anyone (of even, better if someone would help me with getting it readyof course).
+
+![screenshot](https://github.com/klieret/readme-files/blob/master/anki-cbc-import/Selection_004.png)
 
 ## Installation
 
