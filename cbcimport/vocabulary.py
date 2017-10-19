@@ -10,7 +10,7 @@ import csv
 from log import logger
 from .util import split_multiple_delims
 from word import Word
-from typing import List
+# from typing import List
 from config import config
 
 __author__ = "ch4noyu"
@@ -59,8 +59,12 @@ class VocabularyCollection(object):
         self._cursor = len(self._data) - 1 - self._cursor
 
     def get_current(self):
-        """ Return the element at the cursor. """
-        return self._data[self._cursor]
+        """ Return the element at the cursor.
+        If the cursor is out of range, return a blank word object."""
+        try:
+            return self._data[self._cursor]
+        except IndexError:
+            return Word()
 
     def set_current(self, elem):
         """ Replace the element at the cursor with $elem.
@@ -100,9 +104,10 @@ class VocabularyCollection(object):
             field_names = ["Expression", "Kana", "Meaning", None]
     
             for row in reader:
-                fields = [c.decode('utf8').strip() for c in row]
                 element = Word()
-                
+                element.line = '\t'.join(row)
+                fields = [c.decode('utf8').strip() for c in row]
+
                 if not len(fields) == len(field_names):
                     raise (ValueError, "The number of supplied field_names (%d) doesn't match the number of "
                                        "fields in the file %s (%d)." % (len(field_names), filename, len(fields)))
@@ -160,10 +165,10 @@ class VocabularyCollection(object):
     # ========================= [ Return subsets ] =========================
 
     def get(self, boolean_fct):
-        """ Returns list with all elements with boolean_fct(element) == True.
+        """ Returns iterator with all elements with boolean_fct(element) == True.
         :type boolean_fct: Callable
         """
-        return [entry for entry in self._data if boolean_fct(entry)]
+        return (entry for entry in self._data if boolean_fct(entry))
 
     def get_all(self):
         """ Returns list of all elements. """
@@ -173,13 +178,21 @@ class VocabularyCollection(object):
         """ Returns list of all elements that were already added. """
         return self.get(lambda e: e.is_added)
 
-    def get_dupe(self):
+    def get_dupes(self):
         """ Returns list of all elements that were classified as duplicates. """
         return self.get(lambda e: e.is_dupe)
-        
+
+    def get_blacklisted(self):
+        """ Returns list of all elements that were blacklisted. """
+        return self.get(lambda e: e.is_blacklisted)
+
     def get_queue(self):
         """ Returns list of all elements that are currently in the queue. """
         return self.get(lambda e: self.is_in_queue(e))
+
+    def get_rest(self):
+        """ Returns list of all elements that have not been added. """
+        return self.get(lambda e: not e.is_added)
 
     # ========================= [ Navigation ] =========================
 
@@ -286,19 +299,22 @@ class VocabularyCollection(object):
         """ Is the queue empty? """
         return self.len_queue() == 0
 
-    def is_expression_in_queue(self, exp):
-        """ Is expression $exp already in the queue?
+    def is_expression_current_word(self, exp):
+        """ Is expression the expression the word that is at the cursor position?
+        Needed to check if the expression that was added was added from cbc_import.
         :type exp: unicode string
         """
-        # todo: docstring about how this is used
-        if len(exp) >= 3:
-            if exp in self.get_current()["Expression"]:
-                return True
-        else:
-            delims = [',', ';', '・'.decode('utf-8')]
-            exps = split_multiple_delims(self.get_current()["Expression"], delims)
-            if exp in exps:
-                return True
+        current_expressions = self.get_current().splitted_expression
+        if not current_expressions:
+            return False
+        for expression in current_expressions:
+            expression = expression.strip()
+            if len(expression) >= 5:
+                if exp in expression:
+                    return True
+            else:
+                if exp == expression:
+                    return True
         return False
             
 

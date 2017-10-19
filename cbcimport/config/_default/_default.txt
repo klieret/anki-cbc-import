@@ -1,0 +1,9 @@
+[general]
+scan_for_duplicates = True
+default_dir = ~/Desktop/
+
+[ui_states]
+cbcq_skip_dupe_ischecked() = True
+cbcq_skip_rest_ischecked() = False
+cbcq_skip_added_ischecked() = True
+cbcq_skip_black_ischecked() = True

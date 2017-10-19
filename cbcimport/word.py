@@ -4,7 +4,7 @@
 """ Defines the data class 'Word' that holds one word of vocabulary.
 """
 
-from typing import Dict
+# from typing import Dict
 from .util import split_multiple_delims
 from .log import logger
 
@@ -22,6 +22,7 @@ __email__ = "ch4noyu@yahoo.com"
 __license__ = "LGPLv3"
 
 
+# todo: a few docstrings are still missing
 class Word(object):
     """ Contains information about one word of vocabulary.
     All data fields can be accessed by Word[field_name].
@@ -38,6 +39,7 @@ class Word(object):
     def __init__(self):
         # The fields that are to be synchronized with the anki note:
         self._fields = {}  # type: Dict[str, str]
+        self.line = ""
 
         # Name of the expression field
         # todo: should be loaded from config file
@@ -77,9 +79,15 @@ class Word(object):
     @property
     def expression(self):
         try:
-            return self.__getitem__(self.expression_field)
+            expression = self.__getitem__(self.expression_field)
         except KeyError:
-            return ""
+            expression = ""
+        # return kana if no expression
+        # (if there are no kana, this will return "").
+        if not expression:
+            return self.kana
+        else:
+            return expression
 
     @property
     def meaning(self):
@@ -106,7 +114,7 @@ class Word(object):
         splitted = split_multiple_delims(unicode(self.expression), delims=delims)
         if self.reverse_splitting:
             splitted.reverse()
-        print(splitted)
+        splitted = [item.strip() for item in splitted]
         return splitted
 
     @property
@@ -139,3 +147,6 @@ class Word(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def __nonzero__(self):
+        return bool(self.expression.split())
