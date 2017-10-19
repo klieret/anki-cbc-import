@@ -12,9 +12,36 @@ E.g. Linux: ```~/Documents/Anki/addons```, Windows ```<path to your account>/Doc
 
 ## Usage
 
-There are the following buttons:
+Buttons (hover over them to see the corresponding keystrokes):
+* ```File```: Click this button to browse for a new ```.csv``` file to open
+* ```Load```: After selectinv a ```.csv``` file with the ```File``` button, click this button to load the entries
+* ```Show```: Opens the ```.csv``` file in a text-editor (you might have to modify the source to select the editor of your choice/your platform)
+* ```Reverse```: Reverse the order of the vocabulary items in the queue.
+* ```Save```: Save ```.csv``` files containing already added, blacklisted, remaining vocabulary items etc.
+* ```<<```: Go to beginning of queue
+* ```<```: Go to previous queue item
+* ```X```: Copy data of the current queue item to the entry fields
+* ```>```: Go to next queue item
+* ```>>```: Go to last queue item
+* ```Hide```/```Advanced```: Show row of check-boxes and information below this row of buttons
 
-* 
+Labels:
+* ```In```: Currently selected ```.csv``` file
+* ```Cur```: Index of the current item in the queue/Total number of items in the queue (ignoring blacklisted, already added items)
+* ```Idx```: Index of the current item/Total number of items (including all blacklisted and already added items)
+* ```Add```: Number of added notes
+* ```Dup```: Number of duplicate notes
+* ```Black```: Number of blacklisted notes."
+* ```LA```: ("last added") Was the last note added to the Anki collection (and not skipped)?
+ 
+Checkboxes:
+
+* ```Skip Dupe```: Skip duplicate entries (entries that would be flagged by Anki's duplicate finder; note that this requires my addon [ignore dupes](https://github.com/klieret/anki-ignore-dupes)
+* ```Skip Added```: Skip already added entries
+* ```Skip Black```: Skip blacklisted entries
+* ```Skip Rest```: Skip all other entries
+* ```Auto Insert```: Automatically insert the fields from the queue item in the entry fields above, when we hit buttons such as ```>```, ```<``` etc. (else you need to press ```X``` to fill in the information every time)
+* ```Blacklist Current```: Blacklist current card
 
 ## License
 
